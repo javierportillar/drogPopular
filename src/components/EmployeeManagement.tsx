@@ -8,22 +8,27 @@ interface EmployeeManagementProps {
 }
 
 // Helper function to calculate worked days from creation date
+// The logic that used the current date has been commented out for testing
 const calculateWorkedDays = (createdDate?: string): number => {
-  if (!createdDate) return 1; // Default for existing employees
-  
-  const created = new Date(createdDate);
-  const now = new Date();
-  
-  // Set both dates to Colombia timezone (UTC-5)
-  const colombiaOffset = -5 * 60; // -5 hours in minutes
-  const createdColombia = new Date(created.getTime() + (colombiaOffset * 60 * 1000));
-  const nowColombia = new Date(now.getTime() + (colombiaOffset * 60 * 1000));
-  
-  // Calculate difference in days
-  const diffTime = nowColombia.getTime() - createdColombia.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  return Math.max(1, Math.min(30, diffDays)); // Between 1 and 30 days
+  // if (!createdDate) return 1; // Default for existing employees
+
+  // const created = new Date(createdDate);
+  // const now = new Date();
+
+  // // Set both dates to Colombia timezone (UTC-5)
+  // const colombiaOffset = -5 * 60; // -5 hours in minutes
+  // const createdColombia = new Date(created.getTime() + (colombiaOffset * 60 * 1000));
+  // const nowColombia = new Date(now.getTime() + (colombiaOffset * 60 * 1000));
+
+  // // Calculate difference in days
+  // const diffTime = nowColombia.getTime() - createdColombia.getTime();
+  // const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // return Math.max(1, Math.min(30, diffDays)); // Between 1 and 30 days
+
+  // For testing, return the total days in the month of the provided date
+  if (!createdDate) return 30;
+  const date = new Date(createdDate);
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 };
 
 export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employees, setEmployees }) => {
@@ -31,7 +36,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
   const [formData, setFormData] = useState({
     name: '',
-    age: '',
+    birthdate: '',
     phone: '',
     email: '',
     eps: '',
@@ -46,7 +51,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
   const resetForm = () => {
     setFormData({
       name: '',
-      age: '',
+      birthdate: '',
       phone: '',
       email: '',
       eps: '',
@@ -63,7 +68,6 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
     
     const employeeData = {
       ...formData,
-      age: parseInt(formData.age),
       salary: parseFloat(formData.salary),
       workedDays: editingEmployee ? editingEmployee.workedDays : calculateWorkedDays(formData.createdDate),
       createdDate: editingEmployee ? editingEmployee.createdDate : formData.createdDate,
@@ -89,7 +93,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
     setEditingEmployee(employee);
     setFormData({
       name: employee.name,
-      age: employee.age.toString(),
+      birthdate: employee.birthdate,
       phone: employee.phone,
       email: employee.email,
       eps: employee.eps,
@@ -157,12 +161,12 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Edad
+                    Fecha de Nacimiento
                   </label>
                   <input
-                    type="number"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                    type="date"
+                    value={formData.birthdate}
+                    onChange={(e) => setFormData({ ...formData, birthdate: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />

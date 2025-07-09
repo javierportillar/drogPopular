@@ -1,13 +1,12 @@
 import React from 'react';
 import { FileText, User, Calendar, DollarSign, AlertCircle } from 'lucide-react';
-import { PayrollCalculation, AdvancePayment } from '../types';
+import { PayrollCalculation } from '../types';
 
 interface PayrollPreviewProps {
   payrollCalculations: PayrollCalculation[];
-  advances: AdvancePayment[];
 }
 
-export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations, advances }) => {
+export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations }) => {
   const totalPayroll = payrollCalculations.reduce((sum, calc) => sum + calc.netSalary, 0);
   const totalDeductions = payrollCalculations.reduce((sum, calc) => sum + calc.deductions.total, 0);
   const totalTransportAllowance = payrollCalculations.reduce((sum, calc) => sum + calc.transportAllowance, 0);

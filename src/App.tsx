@@ -16,41 +16,42 @@ function App() {
   const [payrollCalculations, setPayrollCalculations] = useState<PayrollCalculation[]>([]);
   const [deductionRates, setDeductionRates] = useState<DeductionRates>(DEFAULT_DEDUCTION_RATES);
 
-  // Update worked days for all employees based on current date
-  React.useEffect(() => {
-    const updateWorkedDays = () => {
-      const updatedEmployees = employees.map(employee => {
-        if (!employee.createdDate) return employee;
-        
-        const created = new Date(employee.createdDate);
-        const now = new Date();
-        
-        // Colombia timezone offset (UTC-5)
-        const colombiaOffset = -5 * 60;
-        const createdColombia = new Date(created.getTime() + (colombiaOffset * 60 * 1000));
-        const nowColombia = new Date(now.getTime() + (colombiaOffset * 60 * 1000));
-        
-        const diffTime = nowColombia.getTime() - createdColombia.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const workedDays = Math.max(1, Math.min(30, diffDays));
-        
-        // Subtract any novelty deductions
-        const employeeNovelties = novelties.filter(n => n.employeeId === employee.id);
-        const discountedDays = employeeNovelties.reduce((sum, n) => sum + n.discountDays, 0);
-        const finalWorkedDays = Math.max(0, workedDays - discountedDays);
-        
-        return { ...employee, workedDays: finalWorkedDays };
-      });
-      
-      setEmployees(updatedEmployees);
-    };
-
-    // Update worked days every hour
-    const interval = setInterval(updateWorkedDays, 60 * 60 * 1000);
-    updateWorkedDays(); // Initial update
-    
-    return () => clearInterval(interval);
-  }, [employees.length, novelties]); // Only depend on employee count and novelties
+  // Update worked days based on current date
+  // Commented out for testing so worked days remain fixed
+  // React.useEffect(() => {
+  //   const updateWorkedDays = () => {
+  //     const updatedEmployees = employees.map(employee => {
+  //       if (!employee.createdDate) return employee;
+  //
+  //       const created = new Date(employee.createdDate);
+  //       const now = new Date();
+  //
+  //       // Colombia timezone offset (UTC-5)
+  //       const colombiaOffset = -5 * 60;
+  //       const createdColombia = new Date(created.getTime() + (colombiaOffset * 60 * 1000));
+  //       const nowColombia = new Date(now.getTime() + (colombiaOffset * 60 * 1000));
+  //
+  //       const diffTime = nowColombia.getTime() - createdColombia.getTime();
+  //       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  //       const workedDays = Math.max(1, Math.min(30, diffDays));
+  //
+  //       // Subtract any novelty deductions
+  //       const employeeNovelties = novelties.filter(n => n.employeeId === employee.id);
+  //       const discountedDays = employeeNovelties.reduce((sum, n) => sum + n.discountDays, 0);
+  //       const finalWorkedDays = Math.max(0, workedDays - discountedDays);
+  //
+  //       return { ...employee, workedDays: finalWorkedDays };
+  //     });
+  //
+  //     setEmployees(updatedEmployees);
+  //   };
+  //
+  //   // Update worked days every hour
+  //   const interval = setInterval(updateWorkedDays, 60 * 60 * 1000);
+  //   updateWorkedDays(); // Initial update
+  //
+  //   return () => clearInterval(interval);
+  // }, [employees.length, novelties]); // Only depend on employee count and novelties
 
   const renderActiveSection = () => {
     switch (activeSection) {
@@ -85,7 +86,7 @@ function App() {
           />
         );
       case 'preview':
-        return <PayrollPreview payrollCalculations={payrollCalculations} advances={advances} />;
+        return <PayrollPreview payrollCalculations={payrollCalculations} />;
       case 'settings':
         return (
           <SettingsManagement
@@ -107,5 +108,4 @@ function App() {
     </div>
   );
 }
-
 export default App;

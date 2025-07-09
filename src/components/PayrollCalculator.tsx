@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calculator, Download, AlertCircle, TrendingUp, CreditCard } from 'lucide-react';
-import { Employee, Novelty, PayrollCalculation, AdvancePayment, DeductionRates, MINIMUM_SALARY_COLOMBIA, TRANSPORT_ALLOWANCE } from '../types';
+import { Employee, Novelty, PayrollCalculation, AdvancePayment, DeductionRates, MINIMUM_SALARY_COLOMBIA } from '../types';
 
 interface PayrollCalculatorProps {
   employees: Employee[];
@@ -20,6 +20,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   payrollCalculations 
 }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [isCalculating, setIsCalculating] = useState(false);
 
   const calculatePayroll = () => {
@@ -85,7 +86,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   };
 
   const exportToTxt = () => {
-    const date = new Date();
+    const date = new Date(selectedDate);
     const month = selectedMonth;
     let txtContent = `NOMINA - ${month}\n`;
     txtContent += `Fecha de procesamiento: ${date.toLocaleDateString()}\n`;
@@ -176,6 +177,17 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Fecha de Cálculo
+            </label>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
             />
           </div>
