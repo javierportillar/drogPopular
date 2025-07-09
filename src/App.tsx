@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigation } from './components/Navigation';
 import { EmployeeManagement } from './components/EmployeeManagement';
 import { NoveltyManagement } from './components/NoveltyManagement';
@@ -16,8 +16,81 @@ function App() {
   const [payrollCalculations, setPayrollCalculations] = useState<PayrollCalculation[]>([]);
   const [deductionRates, setDeductionRates] = useState<DeductionRates>(DEFAULT_DEDUCTION_RATES);
 
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    try {
+      const storedEmployees = localStorage.getItem('employees');
+      if (storedEmployees) {
+        setEmployees(JSON.parse(storedEmployees));
+      }
+
+      const storedNovelties = localStorage.getItem('novelties');
+      if (storedNovelties) {
+        setNovelties(JSON.parse(storedNovelties));
+      }
+
+      const storedAdvances = localStorage.getItem('advances');
+      if (storedAdvances) {
+        setAdvances(JSON.parse(storedAdvances));
+      }
+
+      const storedPayrollCalculations = localStorage.getItem('payrollCalculations');
+      if (storedPayrollCalculations) {
+        setPayrollCalculations(JSON.parse(storedPayrollCalculations));
+      }
+
+      const storedDeductionRates = localStorage.getItem('deductionRates');
+      if (storedDeductionRates) {
+        setDeductionRates(JSON.parse(storedDeductionRates));
+      }
+    } catch (error) {
+      console.error("Failed to load data from localStorage:", error);
+    }
+  }, []);
+
+  // Save data to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('employees', JSON.stringify(employees));
+    } catch (error) {
+      console.error("Failed to save employees to localStorage:", error);
+    }
+  }, [employees]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('novelties', JSON.stringify(novelties));
+    } catch (error) {
+      console.error("Failed to save novelties to localStorage:", error);
+    }
+  }, [novelties]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('advances', JSON.stringify(advances));
+    } catch (error) {
+      console.error("Failed to save advances to localStorage:", error);
+    }
+  }, [advances]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('payrollCalculations', JSON.stringify(payrollCalculations));
+    } catch (error) {
+      console.error("Failed to save payrollCalculations to localStorage:", error);
+    }
+  }, [payrollCalculations]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('deductionRates', JSON.stringify(deductionRates));
+    } catch (error) {
+      console.error("Failed to save deductionRates to localStorage:", error);
+    }
+  }, [deductionRates]);
+
   // Update worked days for all employees based on current date
-  React.useEffect(() => {
+  useEffect(() => {
     const updateWorkedDays = () => {
       const updatedEmployees = employees.map(employee => {
         if (!employee.createdDate) return employee;
@@ -32,14 +105,9 @@ function App() {
         
         const diffTime = nowColombia.getTime() - createdColombia.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const workedDays = Math.max(1, Math.min(30, diffDays));
+        const workedDays = Math.max(1, diffDays); // Remove the 30-day limit for total worked days
         
-        // Subtract any novelty deductions
-        const employeeNovelties = novelties.filter(n => n.employeeId === employee.id);
-        const discountedDays = employeeNovelties.reduce((sum, n) => sum + n.discountDays, 0);
-        const finalWorkedDays = Math.max(0, workedDays - discountedDays);
-        
-        return { ...employee, workedDays: finalWorkedDays };
+        return { ...employee, workedDays };
       });
       
       setEmployees(updatedEmployees);
@@ -50,7 +118,7 @@ function App() {
     updateWorkedDays(); // Initial update
     
     return () => clearInterval(interval);
-  }, [employees.length, novelties]); // Only depend on employee count and novelties
+  }, [employees.length]); // Only depend on employee count, not novelties
 
   const renderActiveSection = () => {
     switch (activeSection) {

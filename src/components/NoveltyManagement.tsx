@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Calendar, User, AlertCircle, Edit, Save, X, Gift, Fuel, Clock } from 'lucide-react';
 import { Employee, Novelty } from '../types';
+import { formatMonthYear } from '../utils/dateUtils';
 
 interface NoveltyManagementProps {
   employees: Employee[];
@@ -84,19 +85,8 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
 
     setNovelties([...novelties, newNovelty]);
 
-    // Update employee's worked days only for deductions
-    if (isDeduction) {
-      const updatedEmployees = employees.map(emp => {
-        if (emp.id === formData.employeeId) {
-          return {
-            ...emp,
-            workedDays: Math.max(0, emp.workedDays - parseFloat(formData.discountDays))
-          };
-        }
-        return emp;
-      });
-      setEmployees(updatedEmployees);
-    }
+    // Note: We no longer update employee's total worked days here
+    // The monthly calculation will handle absences per month
 
     setFormData({
       employeeId: '',
@@ -116,20 +106,8 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     if (confirm('¿Estás seguro de que quieres eliminar esta novedad?')) {
       setNovelties(novelties.filter(n => n.id !== noveltyId));
       
-      // Restore employee's worked days only for deductions
-      const noveltyType = noveltyTypes.find(t => t.value === novelty.type);
-      if (noveltyType?.isDeduction) {
-        const updatedEmployees = employees.map(emp => {
-          if (emp.id === novelty.employeeId) {
-            return {
-              ...emp,
-              workedDays: Math.min(30, emp.workedDays + novelty.discountDays)
-            };
-          }
-          return emp;
-        });
-        setEmployees(updatedEmployees);
-      }
+      // Note: We no longer update employee's total worked days here
+      // The monthly calculation will handle absences per month
     }
   };
 
@@ -205,19 +183,8 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     if (newNovelties.length > 0) {
       setNovelties([...novelties, ...newNovelties]);
       
-      // Update employees' worked days
-      if (Object.keys(employeeUpdates).length > 0) {
-        const updatedEmployees = employees.map(emp => {
-          if (employeeUpdates[emp.id]) {
-            return {
-              ...emp,
-              workedDays: Math.max(0, emp.workedDays - employeeUpdates[emp.id])
-            };
-          }
-          return emp;
-        });
-        setEmployees(updatedEmployees);
-      }
+      // Note: We no longer update employee's total worked days here
+      // The monthly calculation will handle absences per month
       
       setBulkNoveltyData({});
       setEditingEmployees(new Set());
@@ -260,7 +227,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
           <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-blue-900">
-                Empleados sin Novedades - {selectedMonth}
+                Empleados sin Novedades - {formatMonthYear(selectedMonth)}
               </h3>
               {Object.keys(bulkNoveltyData).length > 0 && (
                 <button
@@ -355,7 +322,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
         <div className="bg-white rounded-lg shadow-md border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
             <h3 className="text-lg font-semibold text-green-900">
-              Empleados con Novedades Registradas - {selectedMonth}
+              Empleados con Novedades Registradas - {formatMonthYear(selectedMonth)}
             </h3>
           </div>
           

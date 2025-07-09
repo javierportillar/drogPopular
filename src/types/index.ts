@@ -1,7 +1,7 @@
 export interface Employee {
   id: string;
   name: string;
-  age: number;
+  dateOfBirth: string;
   phone: string;
   email: string;
   eps: string;
@@ -9,6 +9,7 @@ export interface Employee {
   cedula: string;
   salary: number;
   workedDays: number;
+  createdDate?: string;
 }
 
 export interface Novelty {
@@ -25,6 +26,7 @@ export interface Novelty {
 export interface PayrollCalculation {
   employee: Employee;
   workedDays: number;
+  totalDaysInMonth: number;
   baseSalary: number;
   discountedDays: number;
   transportAllowance: number;
