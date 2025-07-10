@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, User, AlertTriangle, Heart, Plane, Gift, Clock, DollarSign, Save, X, Trash2, Check } from 'lucide-react';
+import { Plus, Calendar, User, AlertTriangle, Heart, Plane, Gift, Clock, DollarSign, Save, X, Trash2 } from 'lucide-react';
 import { Employee, Novelty } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
 
@@ -8,18 +8,6 @@ interface NoveltyManagementProps {
   novelties: Novelty[];
   setNovelties: (novelties: Novelty[]) => void;
   setEmployees: (employees: Employee[]) => void;
-}
-
-interface PendingNovelty {
-  id: string;
-  employeeId: string;
-  type: Novelty['type'];
-  value: string;
-  description: string;
-  categoryColor: string;
-  categoryIcon: any;
-  typeLabel: string;
-  unitType: 'DAYS' | 'MONEY' | 'HOURS';
 }
 
 interface BulkNoveltyData {
@@ -41,7 +29,6 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
   const [bulkNoveltyData, setBulkNoveltyData] = useState<BulkNoveltyData>({});
   const [editingEmployees, setEditingEmployees] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [pendingNovelties, setPendingNovelties] = useState<PendingNovelty[]>([]);
   
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -190,17 +177,31 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
   };
 
   const handleEditEmployee = (employeeId: string, categoryId: string) => {
-    setEditingEmployees(prev => new Set([...prev, employeeId]));
-    setSelectedCategory(categoryId);
-    const category = noveltyCategories.find(c => c.id === categoryId);
-    setBulkNoveltyData(prev => ({
-      ...prev,
-      [employeeId]: {
-        type: (category?.types[0].value || 'ABSENCE') as Novelty['type'],
-        value: '1',
-        description: ''
-      }
-    }));
+    // Si el empleado ya está siendo editado, solo cambiar la categoría
+    if (editingEmployees.has(employeeId)) {
+      setSelectedCategory(categoryId);
+      const category = noveltyCategories.find(c => c.id === categoryId);
+      setBulkNoveltyData(prev => ({
+        ...prev,
+        [employeeId]: {
+          ...prev[employeeId],
+          type: (category?.types[0].value || 'ABSENCE') as Novelty['type'],
+        }
+      }));
+    } else {
+      // Si no está siendo editado, iniciar la edición
+      setEditingEmployees(prev => new Set([...prev, employeeId]));
+      setSelectedCategory(categoryId);
+      const category = noveltyCategories.find(c => c.id === categoryId);
+      setBulkNoveltyData(prev => ({
+        ...prev,
+        [employeeId]: {
+          type: (category?.types[0].value || 'ABSENCE') as Novelty['type'],
+          value: '1',
+          description: ''
+        }
+      }));
+    }
   };
 
   const handleCancelEdit = (employeeId: string) => {
@@ -217,73 +218,57 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     setSelectedCategory('');
   };
 
-  // Confirmar una novedad individual (agregar a pendientes)
-  const handleConfirmNovelty = (employeeId: string) => {
-    const data = bulkNoveltyData[employeeId];
-    if (!data || !data.type || !data.value || parseFloat(data.value) <= 0) return;
-
-    const typeInfo = getNoveltyTypeInfo(data.type);
-    const employee = employees.find(emp => emp.id === employeeId);
-    if (!employee) return;
-
-    const pendingNovelty: PendingNovelty = {
-      id: crypto.randomUUID(),
-      employeeId,
-      type: data.type,
-      value: data.value,
-      description: data.description,
-      categoryColor: typeInfo.categoryColor,
-      categoryIcon: typeInfo.categoryIcon,
-      typeLabel: typeInfo.label,
-      unitType: typeInfo.unitType,
-    };
-
-    setPendingNovelties(prev => [...prev, pendingNovelty]);
-
-    // Limpiar el formulario pero mantener el empleado en modo edición
-    setBulkNoveltyData(prev => ({
-      ...prev,
-      [employeeId]: {
-        type: data.type, // Mantener el mismo tipo
-        value: '1',
-        description: ''
+  const handleSaveBulkNovelties = () => {
+    const newNovelties: Novelty[] = [];
+    
+    Object.entries(bulkNoveltyData).forEach(([employeeId, data]) => {
+      const employee = employees.find(emp => emp.id === employeeId);
+      if (employee && data.type && data.value) {
+        const typeInfo = getNoveltyTypeInfo(data.type);
+        const value = parseFloat(data.value);
+        
+        if (value > 0) {
+          newNovelties.push({
+            id: crypto.randomUUID(),
+            employeeId,
+            employeeName: employee.name,
+            type: data.type,
+            date: new Date().toISOString().slice(0, 10),
+            description: data.description || '',
+            discountDays: typeInfo.unitType === 'DAYS' && ['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(data.type) ? value : 0,
+            bonusAmount: typeInfo.unitType === 'MONEY' ? value : 0,
+            hours: typeInfo.unitType === 'HOURS' ? value : undefined,
+            days: typeInfo.unitType === 'DAYS' && !['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(data.type) ? value : undefined,
+            unitType: typeInfo.unitType,
+          });
+        }
       }
-    }));
-  };
-
-  // Eliminar una novedad pendiente
-  const handleRemovePendingNovelty = (pendingId: string) => {
-    setPendingNovelties(prev => prev.filter(p => p.id !== pendingId));
-  };
-
-  // Guardar todas las novedades pendientes
-  const handleSaveAllNovelties = () => {
-    if (pendingNovelties.length === 0) return;
-
-    const newNovelties: Novelty[] = pendingNovelties.map(pending => {
-      const employee = employees.find(emp => emp.id === pending.employeeId);
-      const value = parseFloat(pending.value);
-      
-      return {
-        id: crypto.randomUUID(),
-        employeeId: pending.employeeId,
-        employeeName: employee?.name || '',
-        type: pending.type,
-        date: new Date().toISOString().slice(0, 10),
-        description: pending.description || '',
-        discountDays: pending.unitType === 'DAYS' && ['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(pending.type) ? value : 0,
-        bonusAmount: pending.unitType === 'MONEY' ? value : 0,
-        hours: pending.unitType === 'HOURS' ? value : undefined,
-        days: pending.unitType === 'DAYS' && !['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(pending.type) ? value : undefined,
-        unitType: pending.unitType,
-      };
     });
 
-    setNovelties([...novelties, ...newNovelties]);
-    setPendingNovelties([]);
-    setBulkNoveltyData({});
-    setEditingEmployees(new Set());
-    setSelectedCategory('');
+    if (newNovelties.length > 0) {
+      setNovelties([...novelties, ...newNovelties]);
+      // Limpiar solo los datos guardados, pero mantener el estado de edición
+      const savedEmployeeIds = Object.keys(bulkNoveltyData).filter(employeeId => {
+        const data = bulkNoveltyData[employeeId];
+        return data.type && data.value && parseFloat(data.value) > 0;
+      });
+      
+      setBulkNoveltyData(prev => {
+        const newData = { ...prev };
+        savedEmployeeIds.forEach(employeeId => {
+          delete newData[employeeId];
+        });
+        return newData;
+      });
+      
+      setEditingEmployees(prev => {
+        const newSet = new Set(prev);
+        savedEmployeeIds.forEach(employeeId => {
+          newSet.delete(employeeId);
+        });
+        return newSet;
+      });
+    }
   };
 
   const getNoveltyDisplayValue = (novelty: Novelty) => {
@@ -302,32 +287,11 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     }
   };
 
-  const getPendingDisplayValue = (pending: PendingNovelty) => {
-    const value = parseFloat(pending.value);
-    switch (pending.unitType) {
-      case 'DAYS':
-        return `${value} días`;
-      case 'MONEY':
-        return `$${value.toLocaleString()}`;
-      case 'HOURS':
-        return `${value} horas`;
-      default:
-        return '-';
-    }
-  };
-
   // Get available types for the selected category
   const getAvailableTypes = () => {
     if (!selectedCategory) return [];
     const category = noveltyCategories.find(c => c.id === selectedCategory);
     return category?.types || [];
-  };
-
-  const colorClasses = {
-    red: 'bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800',
-    blue: 'bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800',
-    green: 'bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800',
-    purple: 'bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-800'
   };
 
   return (
@@ -356,94 +320,24 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
         </div>
       </div>
 
-      {/* Pending Novelties Section */}
-      {pendingNovelties.length > 0 && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-yellow-800">
-              Novedades Pendientes de Guardar ({pendingNovelties.length})
-            </h3>
-            <button
-              onClick={handleSaveAllNovelties}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              <Save className="h-4 w-4" />
-              <span>Guardar Todas las Novedades</span>
-            </button>
-          </div>
-          
-          <div className="space-y-4">
-            {(() => {
-              // Agrupar novedades pendientes por empleado
-              const groupedPending = pendingNovelties.reduce((acc, pending) => {
-                if (!acc[pending.employeeId]) {
-                  acc[pending.employeeId] = [];
-                }
-                acc[pending.employeeId].push(pending);
-                return acc;
-              }, {} as Record<string, PendingNovelty[]>);
-
-              return Object.entries(groupedPending).map(([employeeId, employeePendingNovelties]) => {
-                const employee = employees.find(emp => emp.id === employeeId);
-                
-                return (
-                  <div key={employeeId} className="bg-white border border-yellow-300 rounded-lg p-4">
-                    {/* Nombre del empleado */}
-                    <div className="flex items-center space-x-2 mb-3">
-                      <User className="h-5 w-5 text-blue-600" />
-                      <span className="font-semibold text-gray-900 text-lg">{employee?.name}</span>
-                    </div>
-                    
-                    {/* Línea separadora */}
-                    <hr className="border-gray-300 mb-3" />
-                    
-                    {/* Lista de novedades del empleado */}
-                    <div className="space-y-2">
-                      {employeePendingNovelties.map((pending) => {
-                        const Icon = pending.categoryIcon;
-                        
-                        return (
-                          <div key={pending.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-center space-x-3">
-                              <div className={`p-2 rounded-full bg-${pending.categoryColor}-100`}>
-                                <Icon className={`h-4 w-4 text-${pending.categoryColor}-600`} />
-                              </div>
-                              <div>
-                                <p className="font-medium text-gray-900">{pending.typeLabel}</p>
-                                <p className="text-sm text-gray-600">
-                                  <span className="font-medium">Valor:</span> {getPendingDisplayValue(pending)}
-                                  {pending.description && (
-                                    <span className="ml-2">• {pending.description}</span>
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => handleRemovePendingNovelty(pending.id)}
-                              className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
-                              title="Eliminar novedad pendiente"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        </div>
-      )}
-
       {/* Employees without novelties */}
       {employeesWithoutNovelties.length > 0 && (
         <div className="bg-white rounded-lg shadow-md border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
-            <h3 className="text-lg font-semibold text-blue-900">
-              Empleados sin Novedades - {formatMonthYear(selectedMonth)}
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-blue-900">
+                Empleados sin Novedades - {formatMonthYear(selectedMonth)}
+              </h3>
+              {Object.keys(bulkNoveltyData).length > 0 && (
+                <button
+                  onClick={handleSaveBulkNovelties}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+                >
+                  <Save className="h-4 w-4" />
+                  <span>Guardar Novedades</span>
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="divide-y divide-gray-200">
@@ -458,80 +352,75 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-4">
-                    {/* Mostrar novedades pendientes para este empleado */}
-                    {pendingNovelties.filter(p => p.employeeId === employee.id).length > 0 && (
-                      <div className="text-xs text-green-600 font-medium">
-                        {pendingNovelties.filter(p => p.employeeId === employee.id).length} pendiente(s)
+                  {editingEmployees.has(employee.id) ? (
+                    <div className="flex items-center space-x-3">
+                      <select
+                        value={bulkNoveltyData[employee.id]?.type || ''}
+                        onChange={(e) => handleBulkNoveltyChange(employee.id, 'type', e.target.value)}
+                        className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      >
+                        <option value="">Seleccionar tipo</option>
+                        {getAvailableTypes().map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </select>
+                      
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="number"
+                          step="0.5"
+                          placeholder="Valor"
+                          value={bulkNoveltyData[employee.id]?.value || ''}
+                          onChange={(e) => handleBulkNoveltyChange(employee.id, 'value', e.target.value)}
+                          className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        />
+                        <span className="text-xs text-gray-500">
+                          {(() => {
+                            const selectedType = bulkNoveltyData[employee.id]?.type;
+                            if (selectedType) {
+                              const typeInfo = getNoveltyTypeInfo(selectedType);
+                              return getUnitLabel(typeInfo.unitType);
+                            }
+                            return '';
+                          })()}
+                        </span>
+                      </div>
+                      
+                      <input
+                        type="text"
+                        placeholder="Descripción"
+                        value={bulkNoveltyData[employee.id]?.description || ''}
+                        onChange={(e) => handleBulkNoveltyChange(employee.id, 'description', e.target.value)}
+                        className="w-32 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      
+                      <button
+                        onClick={() => handleCancelEdit(employee.id)}
+                        className="text-gray-500 hover:text-gray-700 p-1"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : null}
+                  
+                  {/* Siempre mostrar los botones de categorías */}
+                  <div className="flex items-center space-x-2">
+                    {editingEmployees.has(employee.id) && (
+                      <div className="text-xs text-blue-600 font-medium mr-2">
+                        Editando...
                       </div>
                     )}
-                    
-                    {editingEmployees.has(employee.id) ? (
-                      <div className="flex items-center space-x-3">
-                        <select
-                          value={bulkNoveltyData[employee.id]?.type || ''}
-                          onChange={(e) => handleBulkNoveltyChange(employee.id, 'type', e.target.value)}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        >
-                          <option value="">Seleccionar tipo</option>
-                          {getAvailableTypes().map((type) => (
-                            <option key={type.value} value={type.value}>
-                              {type.label}
-                            </option>
-                          ))}
-                        </select>
-                        
-                        <div className="flex items-center space-x-1">
-                          <input
-                            type="number"
-                            step="0.5"
-                            placeholder="Valor"
-                            value={bulkNoveltyData[employee.id]?.value || ''}
-                            onChange={(e) => handleBulkNoveltyChange(employee.id, 'value', e.target.value)}
-                            className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                          <span className="text-xs text-gray-500">
-                            {(() => {
-                              const selectedType = bulkNoveltyData[employee.id]?.type;
-                              if (selectedType) {
-                                const typeInfo = getNoveltyTypeInfo(selectedType);
-                                return getUnitLabel(typeInfo.unitType);
-                              }
-                              return '';
-                            })()}
-                          </span>
-                        </div>
-                        
-                        <input
-                          type="text"
-                          placeholder="Descripción"
-                          value={bulkNoveltyData[employee.id]?.description || ''}
-                          onChange={(e) => handleBulkNoveltyChange(employee.id, 'description', e.target.value)}
-                          className="w-32 px-2 py-1 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        
-                        <button
-                          onClick={() => handleConfirmNovelty(employee.id)}
-                          disabled={!bulkNoveltyData[employee.id]?.type || !bulkNoveltyData[employee.id]?.value || parseFloat(bulkNoveltyData[employee.id]?.value || '0') <= 0}
-                          className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-3 py-1 rounded text-sm flex items-center space-x-1 transition-colors"
-                        >
-                          <Check className="h-3 w-3" />
-                          <span>Listo</span>
-                        </button>
-                        
-                        <button
-                          onClick={() => handleCancelEdit(employee.id)}
-                          className="text-gray-500 hover:text-gray-700 p-1"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : null}
-                    
-                    {/* Siempre mostrar los botones de categorías */}
                     <div className="flex items-center space-x-2">
                       {noveltyCategories.map((category) => {
                         const Icon = category.icon;
+                        const colorClasses = {
+                          red: 'bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800',
+                          blue: 'bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800',
+                          green: 'bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800',
+                          purple: 'bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-800'
+                        };
                         
                         return (
                           <button

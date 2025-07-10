@@ -167,9 +167,37 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                       <div className="space-y-1">
                         {calc.novelties.map((novelty) => (
                           <div key={novelty.id} className="text-xs text-gray-600">
-                            <span className="font-medium">{new Date(novelty.date).toLocaleDateString()}</span>: {novelty.type}
+                            <span className="font-medium">{new Date(novelty.date).toLocaleDateString()}</span>: {(() => {
+                              const typeLabels: Record<string, string> = {
+                                'ABSENCE': 'Ausencia',
+                                'LATE': 'Llegada tarde',
+                                'EARLY_LEAVE': 'Salida temprana',
+                                'MEDICAL_LEAVE': 'Incapacidad médica',
+                                'VACATION': 'Vacaciones',
+                                'FIXED_COMPENSATION': 'Compensatorios fijos',
+                                'SALES_BONUS': 'Bonificación en venta',
+                                'FIXED_OVERTIME': 'Horas extra fijas',
+                                'UNEXPECTED_OVERTIME': 'Horas extra NE',
+                                'NIGHT_SURCHARGE': 'Recargos nocturnos',
+                                'SUNDAY_WORK': 'Festivos',
+                                'GAS_ALLOWANCE': 'Auxilio de gasolina'
+                              };
+                              return typeLabels[novelty.type] || novelty.type;
+                            })()}
                             {novelty.discountDays > 0 && (
                               <span className="text-red-600 ml-1">(-{novelty.discountDays} días)</span>
+                            )}
+                            {novelty.bonusAmount > 0 && (
+                              <span className="text-green-600 ml-1">(+${novelty.bonusAmount.toLocaleString()})</span>
+                            )}
+                            {novelty.hours && novelty.hours > 0 && (
+                              <span className="text-blue-600 ml-1">({novelty.hours} horas)</span>
+                            )}
+                            {novelty.days && novelty.days > 0 && (
+                              <span className="text-purple-600 ml-1">({novelty.days} días)</span>
+                            )}
+                            {novelty.description && (
+                              <span className="text-gray-500 ml-1">- {novelty.description}</span>
                             )}
                           </div>
                         ))}
