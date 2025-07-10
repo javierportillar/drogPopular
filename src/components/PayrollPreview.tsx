@@ -1,7 +1,6 @@
 import React from 'react';
 import { FileText, User, Calendar, DollarSign, AlertCircle } from 'lucide-react';
 import { PayrollCalculation, AdvancePayment } from '../types';
-import { formatMonthYear } from '../utils/dateUtils';
 
 interface PayrollPreviewProps {
   payrollCalculations: PayrollCalculation[];
@@ -181,6 +180,12 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                                 'NIGHT_SURCHARGE': 'Recargos nocturnos',
                                 'SUNDAY_WORK': 'Festivos',
                                 'GAS_ALLOWANCE': 'Auxilio de gasolina'
+                                ,'PLAN_CORPORATIVO': 'Plan corporativo'
+                                ,'RECORDAR': 'Recordar'
+                                ,'INVENTARIOS_CRUCES': 'Inventarios y cruces'
+                                ,'MULTAS': 'Multas'
+                                ,'FONDO_EMPLEADOS': 'Fondo de empleados'
+                                ,'CARTERA_EMPLEADOS': 'Cartera empleados'
                               };
                               return typeLabels[novelty.type] || novelty.type;
                             })()}

@@ -61,7 +61,6 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         
       // Calculate bonuses from novelties of this month
       const bonusCalculations = calculateBonuses(monthlyNovelties, deductionRates);
-      const bonuses = bonusCalculations.total;
       
       // Calculate deductions using configurable rates
       const healthDeduction = grossSalary * (deductionRates.health / 100);
@@ -69,10 +68,44 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       const solidarityDeduction = employee.salary >= (MINIMUM_SALARY_COLOMBIA * 4) ? 
         grossSalary * (deductionRates.solidarity / 100) : 0;
       
-      // Calculate total advances for this month
-      const totalAdvances = employeeAdvances.reduce((sum, advance) => sum + advance.amount, 0);
-      
-      const totalDeductions = healthDeduction + pensionDeduction + solidarityDeduction + totalAdvances;
+      const absenceDeduction = dailySalary * monthlyDiscountedDays;
+
+      const planCorporativo = monthlyNovelties
+        .filter(n => n.type === 'PLAN_CORPORATIVO')
+        .reduce((sum, n) => sum + n.bonusAmount, 0);
+      const recordar = monthlyNovelties
+        .filter(n => n.type === 'RECORDAR')
+        .reduce((sum, n) => sum + n.bonusAmount, 0);
+      const inventariosCruces = monthlyNovelties
+        .filter(n => n.type === 'INVENTARIOS_CRUCES')
+        .reduce((sum, n) => sum + n.bonusAmount, 0);
+      const multas = monthlyNovelties
+        .filter(n => n.type === 'MULTAS')
+        .reduce((sum, n) => sum + n.bonusAmount, 0);
+      const fondoEmpleadosDed = monthlyNovelties
+        .filter(n => n.type === 'FONDO_EMPLEADOS')
+        .reduce((sum, n) => sum + n.bonusAmount, 0);
+      const carteraEmpleadosDed = monthlyNovelties
+        .filter(n => n.type === 'CARTERA_EMPLEADOS')
+        .reduce((sum, n) => sum + n.bonusAmount, 0);
+
+      const totalAdvances = employeeAdvances.reduce(
+        (sum, adv) => sum + adv.amount - (adv.employeeFund || 0) - (adv.employeeLoan || 0),
+        0
+      );
+
+      const totalDeductions =
+        healthDeduction +
+        pensionDeduction +
+        solidarityDeduction +
+        absenceDeduction +
+        planCorporativo +
+        recordar +
+        inventariosCruces +
+        multas +
+        fondoEmpleadosDed +
+        carteraEmpleadosDed +
+        totalAdvances;
       const netSalary = grossSalary + transportAllowance + bonusCalculations.total - totalDeductions;
       
       return {
@@ -89,7 +122,14 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
           health: healthDeduction,
           pension: pensionDeduction,
           solidarity: solidarityDeduction,
+          absence: absenceDeduction,
           advance: totalAdvances,
+          planCorporativo,
+          recordar,
+          inventariosCruces,
+          multas,
+          fondoEmpleados: fondoEmpleadosDed,
+          carteraEmpleados: carteraEmpleadosDed,
           total: totalDeductions,
         },
         netSalary: netSalary,
@@ -122,26 +162,30 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         case 'SALES_BONUS':
           calculations.salesBonus += novelty.bonusAmount;
           break;
-        case 'FIXED_OVERTIME':
+        case 'FIXED_OVERTIME': {
           // Horas extra fijas: horas × hora ordinaria
           const fixedOvertimeAmount = (novelty.hours || 0) * rates.ordinaryHour;
           calculations.fixedOvertime += fixedOvertimeAmount;
           break;
-        case 'UNEXPECTED_OVERTIME':
+        }
+        case 'UNEXPECTED_OVERTIME': {
           // Horas extra NE: horas × horas extra
           const unexpectedOvertimeAmount = (novelty.hours || 0) * rates.overtime;
           calculations.unexpectedOvertime += unexpectedOvertimeAmount;
           break;
-        case 'NIGHT_SURCHARGE':
+        }
+        case 'NIGHT_SURCHARGE': {
           // Recargos nocturnos: horas × recargos nocturnos
           const nightSurchargeAmount = (novelty.hours || 0) * rates.nightSurcharge;
           calculations.nightSurcharge += nightSurchargeAmount;
           break;
-        case 'SUNDAY_WORK':
+        }
+        case 'SUNDAY_WORK': {
           // Festivos: días × dominical 1
           const sundayWorkAmount = (novelty.days || 0) * rates.sunday1;
           calculations.sundayWork += sundayWorkAmount;
           break;
+        }
         case 'GAS_ALLOWANCE':
           calculations.gasAllowance += novelty.bonusAmount;
           break;
@@ -213,6 +257,27 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       if (calc.deductions.solidarity > 0) {
         txtContent += `     - Solidaridad (${deductionRates.solidarity}%): $${calc.deductions.solidarity.toLocaleString()}\n`;
       }
+      if (calc.deductions.absence > 0) {
+        txtContent += `     - Ausencias: $${calc.deductions.absence.toLocaleString()}\n`;
+      }
+      if (calc.deductions.planCorporativo > 0) {
+        txtContent += `     - Plan corporativo: $${calc.deductions.planCorporativo.toLocaleString()}\n`;
+      }
+      if (calc.deductions.recordar > 0) {
+        txtContent += `     - Recordar: $${calc.deductions.recordar.toLocaleString()}\n`;
+      }
+      if (calc.deductions.inventariosCruces > 0) {
+        txtContent += `     - Inventarios y cruces: $${calc.deductions.inventariosCruces.toLocaleString()}\n`;
+      }
+      if (calc.deductions.multas > 0) {
+        txtContent += `     - Multas: $${calc.deductions.multas.toLocaleString()}\n`;
+      }
+      if (calc.deductions.fondoEmpleados > 0) {
+        txtContent += `     - Fondo empleados: $${calc.deductions.fondoEmpleados.toLocaleString()}\n`;
+      }
+      if (calc.deductions.carteraEmpleados > 0) {
+        txtContent += `     - Cartera empleados: $${calc.deductions.carteraEmpleados.toLocaleString()}\n`;
+      }
       if (calc.deductions.advance > 0) {
         txtContent += `     - Adelantos: $${calc.deductions.advance.toLocaleString()}\n`;
       }
@@ -240,7 +305,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     const totalNet = payrollCalculations.reduce((sum, calc) => sum + calc.netSalary, 0);
     const totalAdvancesMonth = advances
       .filter(a => a.month === selectedMonth)
-      .reduce((sum, advance) => sum + advance.amount, 0);
+      .reduce((sum, advance) => sum + advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0), 0);
     
     txtContent += `RESUMEN:\n`;
     txtContent += `Total Salarios Brutos: $${payrollCalculations.reduce((sum, calc) => sum + calc.grossSalary, 0).toLocaleString()}\n`;
@@ -260,7 +325,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   const totalPayroll = payrollCalculations.reduce((sum, calc) => sum + calc.netSalary, 0);
   const totalAdvancesMonth = advances
     .filter(a => a.month === selectedMonth)
-    .reduce((sum, advance) => sum + advance.amount, 0);
+    .reduce((sum, advance) => sum + advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -366,9 +431,17 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Adiciones
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Deducciones
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salud</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pensión</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausencias $</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Corp.</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recordar</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventarios</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Multas</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fondo Emp.</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cartera Emp.</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adelantos</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ded.</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Salario Neto
                   </th>
@@ -435,21 +508,17 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
                         <span className="text-gray-400">-</span>
                       )}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="space-y-1">
-                        <div>Salud: ${calc.deductions.health.toLocaleString()}</div>
-                        <div>Pensión: ${calc.deductions.pension.toLocaleString()}</div>
-                        {calc.deductions.solidarity > 0 && (
-                          <div>Solidaridad: ${calc.deductions.solidarity.toLocaleString()}</div>
-                        )}
-                        {calc.deductions.advance > 0 && (
-                          <div className="text-purple-600">Adelantos: ${calc.deductions.advance.toLocaleString()}</div>
-                        )}
-                        <div className="font-medium border-t pt-1">
-                          Total: ${calc.deductions.total.toLocaleString()}
-                        </div>
-                      </div>
-                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.health.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.pension.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.absence.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.planCorporativo.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.recordar.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.inventariosCruces.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.multas.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.fondoEmpleados.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.carteraEmpleados.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${calc.deductions.advance.toLocaleString()}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">${calc.deductions.total.toLocaleString()}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
                       ${calc.netSalary.toLocaleString()}
                     </td>

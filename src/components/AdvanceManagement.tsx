@@ -26,9 +26,13 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
   const [bulkAdvanceData, setBulkAdvanceData] = useState<BulkAdvanceData>({});
   const [editingEmployees, setEditingEmployees] = useState<Set<string>>(new Set());
   
+  const [editingAdvance, setEditingAdvance] = useState<AdvancePayment | null>(null);
+
   const [formData, setFormData] = useState({
     employeeId: '',
     amount: '',
+    employeeFund: '',
+    employeeLoan: '',
     date: new Date().toISOString().slice(0, 10),
     month: new Date().toISOString().slice(0, 7),
     description: '',
@@ -53,25 +57,34 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
     const employee = employees.find(emp => emp.id === formData.employeeId);
     if (!employee) return;
 
-    const newAdvance: AdvancePayment = {
-      id: crypto.randomUUID(),
+    const advanceData: AdvancePayment = {
+      id: editingAdvance ? editingAdvance.id : crypto.randomUUID(),
       employeeId: formData.employeeId,
       employeeName: employee.name,
       amount: parseFloat(formData.amount),
+      employeeFund: formData.employeeFund ? parseFloat(formData.employeeFund) : 0,
+      employeeLoan: formData.employeeLoan ? parseFloat(formData.employeeLoan) : 0,
       date: formData.date,
       month: formData.month,
       description: formData.description,
     };
 
-    setAdvances([...advances, newAdvance]);
+    if (editingAdvance) {
+      setAdvances(advances.map(a => (a.id === editingAdvance.id ? advanceData : a)));
+    } else {
+      setAdvances([...advances, advanceData]);
+    }
 
     setFormData({
       employeeId: '',
       amount: '',
+      employeeFund: '',
+      employeeLoan: '',
       date: new Date().toISOString().slice(0, 10),
       month: new Date().toISOString().slice(0, 7),
       description: '',
     });
+    setEditingAdvance(null);
     setIsFormOpen(false);
   };
 
@@ -79,6 +92,20 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
     if (confirm('¿Estás seguro de que quieres eliminar este adelanto?')) {
       setAdvances(advances.filter(a => a.id !== advanceId));
     }
+  };
+
+  const handleEditAdvance = (advance: AdvancePayment) => {
+    setEditingAdvance(advance);
+    setFormData({
+      employeeId: advance.employeeId,
+      amount: advance.amount.toString(),
+      employeeFund: advance.employeeFund?.toString() || '',
+      employeeLoan: advance.employeeLoan?.toString() || '',
+      date: advance.date,
+      month: advance.month,
+      description: advance.description,
+    });
+    setIsFormOpen(true);
   };
 
   const handleBulkAdvanceChange = (employeeId: string, field: 'amount' | 'description', value: string) => {
@@ -271,6 +298,15 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                     Monto
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Fondo Emp.
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cartera Emp.
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    A descontar
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -303,6 +339,17 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                           </span>
                         </div>
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {advance.employeeFund ? `$${advance.employeeFund.toLocaleString()}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {advance.employeeLoan ? `$${advance.employeeLoan.toLocaleString()}` : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-700">
+                        ${(
+                          advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0)
+                        ).toLocaleString()}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 text-gray-400 mr-2" />
@@ -317,6 +364,12 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
+                        <button
+                          onClick={() => handleEditAdvance(advance)}
+                          className="text-blue-600 hover:text-blue-800 p-1 mr-2"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => handleDelete(advance.id)}
                           className="text-red-600 hover:text-red-800 p-1"
@@ -336,7 +389,9 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold mb-4">Registrar Adelanto Individual</h3>
+            <h3 className="text-lg font-semibold mb-4">
+              {editingAdvance ? 'Editar Adelanto' : 'Registrar Adelanto Individual'}
+            </h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -370,6 +425,29 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                   placeholder="0"
                   required
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fondo de Empleados</label>
+                  <input
+                    type="number"
+                    value={formData.employeeFund}
+                    onChange={(e) => setFormData({ ...formData, employeeFund: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cartera Empleados</label>
+                  <input
+                    type="number"
+                    value={formData.employeeLoan}
+                    onChange={(e) => setFormData({ ...formData, employeeLoan: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="0"
+                  />
+                </div>
               </div>
               
               <div>
@@ -414,7 +492,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
+                  onClick={() => { setIsFormOpen(false); setEditingAdvance(null); }}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
@@ -423,7 +501,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                   type="submit"
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
                 >
-                  Registrar
+                  {editingAdvance ? 'Actualizar' : 'Registrar'}
                 </button>
               </div>
             </form>

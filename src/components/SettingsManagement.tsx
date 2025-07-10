@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Percent, Save, RotateCcw, Clock, DollarSign } from 'lucide-react';
+import { Settings, Percent, Save, RotateCcw, Clock } from 'lucide-react';
 import { DeductionRates, DEFAULT_DEDUCTION_RATES } from '../types';
 
 interface SettingsManagementProps {
