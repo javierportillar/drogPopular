@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, User, AlertTriangle, Heart, Plane, Gift, Clock, DollarSign, Save, X, Trash2 } from 'lucide-react';
+import { Plus, Calendar, User, AlertTriangle, Heart, Plane, Gift, Clock, DollarSign, Save, X, Trash2, Edit } from 'lucide-react';
 import { Employee, Novelty } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
 
@@ -37,6 +37,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     description: '',
     value: '1',
   });
+  const [editingNovelty, setEditingNovelty] = useState<Novelty | null>(null);
 
   const noveltyCategories = [
     {
@@ -98,6 +99,14 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     .filter(emp => employeesWithNovelties.includes(emp.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  const noveltiesByEmployee = novelties
+    .filter(novelty => novelty.date.startsWith(selectedMonth))
+    .reduce<Record<string, Novelty[]>>((acc, novelty) => {
+      if (!acc[novelty.employeeId]) acc[novelty.employeeId] = [];
+      acc[novelty.employeeId].push(novelty);
+      return acc;
+    }, {});
+
   const getNoveltyTypeInfo = (type: Novelty['type']) => {
     for (const category of noveltyCategories) {
       const noveltyType = category.types.find(t => t.value === type);
@@ -127,15 +136,14 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const employee = employees.find(emp => emp.id === formData.employeeId);
     if (!employee) return;
 
     const typeInfo = getNoveltyTypeInfo(formData.type);
     const value = parseFloat(formData.value);
 
-    const newNovelty: Novelty = {
-      id: crypto.randomUUID(),
+    const baseNovelty = {
       employeeId: formData.employeeId,
       employeeName: employee.name,
       type: formData.type,
@@ -148,7 +156,13 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
       unitType: typeInfo.unitType,
     };
 
-    setNovelties([...novelties, newNovelty]);
+    if (editingNovelty) {
+      const updated: Novelty = { ...editingNovelty, ...baseNovelty };
+      setNovelties(novelties.map(n => n.id === editingNovelty.id ? updated : n));
+    } else {
+      const newNovelty: Novelty = { id: crypto.randomUUID(), ...baseNovelty };
+      setNovelties([...novelties, newNovelty]);
+    }
 
     setFormData({
       employeeId: '',
@@ -157,6 +171,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
       description: '',
       value: '1',
     });
+    setEditingNovelty(null);
     setIsFormOpen(false);
   };
 
@@ -164,6 +179,39 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     if (confirm('¿Estás seguro de que quieres eliminar esta novedad?')) {
       setNovelties(novelties.filter(n => n.id !== noveltyId));
     }
+  };
+
+  const handleEdit = (novelty: Novelty) => {
+    const value = (() => {
+      if (novelty.unitType === 'MONEY') return novelty.bonusAmount;
+      if (novelty.unitType === 'HOURS') return novelty.hours ?? 0;
+      if (['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(novelty.type)) {
+        return novelty.discountDays;
+      }
+      return novelty.days ?? 0;
+    })();
+
+    setFormData({
+      employeeId: novelty.employeeId,
+      type: novelty.type,
+      date: novelty.date,
+      description: novelty.description,
+      value: value.toString(),
+    });
+    setEditingNovelty(novelty);
+    setIsFormOpen(true);
+  };
+
+  const handleAddForEmployee = (employeeId: string) => {
+    setFormData({
+      employeeId,
+      type: 'ABSENCE',
+      date: new Date().toISOString().slice(0, 10),
+      description: '',
+      value: '1',
+    });
+    setEditingNovelty(null);
+    setIsFormOpen(true);
   };
 
   const handleBulkNoveltyChange = (employeeId: string, field: keyof BulkNoveltyData[string], value: string) => {
@@ -445,94 +493,78 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
 
       {/* Employees with novelties */}
       {employeesWithNoveltiesData.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200 bg-green-50">
-            <h3 className="text-lg font-semibold text-green-900">
-              Empleados con Novedades Registradas - {formatMonthYear(selectedMonth)}
-            </h3>
-          </div>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Empleado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Tipo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Valor
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Descripción
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {novelties
-                  .filter(novelty => novelty.date.startsWith(selectedMonth))
-                  .sort((a, b) => a.employeeName.localeCompare(b.employeeName))
-                  .map((novelty) => {
-                    const typeInfo = getNoveltyTypeInfo(novelty.type);
-                    const Icon = typeInfo.categoryIcon;
-                    const isDeduction = ['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(novelty.type);
-                    
-                    return (
-                      <tr key={novelty.id} className="hover:bg-green-50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <User className="h-4 w-4 text-gray-400 mr-2" />
-                            <span className="text-sm font-medium text-gray-900">
-                              {novelty.employeeName}
+        <div className="space-y-6">
+          {employeesWithNoveltiesData.map(employee => (
+            <div key={employee.id} className="bg-white rounded-lg shadow-md border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <User className="h-5 w-5 text-green-600" />
+                  <div>
+                    <h4 className="font-semibold text-gray-900">{employee.name}</h4>
+                    <p className="text-sm text-gray-500">{employee.contractType}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleAddForEmployee(employee.id)}
+                  className="text-orange-600 hover:text-orange-800 flex items-center space-x-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Añadir Novedad</span>
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valor</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {(noveltiesByEmployee[employee.id] || []).map(novelty => {
+                      const typeInfo = getNoveltyTypeInfo(novelty.type);
+                      const Icon = typeInfo.categoryIcon;
+                      const isDeduction = ['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(novelty.type);
+                      return (
+                        <tr key={novelty.id} className="hover:bg-green-50 transition-colors">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-${typeInfo.categoryColor}-100 text-${typeInfo.categoryColor}-800`}>
+                              <Icon className="h-3 w-3 mr-1" />
+                              {typeInfo.label}
                             </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full bg-${typeInfo.categoryColor}-100 text-${typeInfo.categoryColor}-800`}>
-                            <Icon className="h-3 w-3 mr-1" />
-                            {typeInfo.label}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                            <span className="text-sm text-gray-900">
-                              {new Date(novelty.date).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`text-sm font-medium ${isDeduction ? 'text-red-600' : 'text-green-600'}`}>
-                            {isDeduction ? '-' : '+'}{getNoveltyDisplayValue(novelty)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-sm text-gray-900">
-                            {novelty.description || '-'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleDelete(novelty.id)}
-                            className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-              </tbody>
-            </table>
-          </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                              <span className="text-sm text-gray-900">{new Date(novelty.date).toLocaleDateString()}</span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <span className={`text-sm font-medium ${isDeduction ? 'text-red-600' : 'text-green-600'}`}>{isDeduction ? '-' : '+'}{getNoveltyDisplayValue(novelty)}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="text-sm text-gray-900">{novelty.description || '-'}</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button onClick={() => handleEdit(novelty)} className="text-blue-600 hover:text-blue-800 p-1 mr-2">
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button onClick={() => handleDelete(novelty.id)} className="text-red-600 hover:text-red-800 p-1">
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -540,7 +572,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
       {isFormOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h3 className="text-lg font-semibold mb-4">Registrar Novedad Individual</h3>
+            <h3 className="text-lg font-semibold mb-4">{editingNovelty ? 'Editar Novedad' : 'Registrar Novedad Individual'}</h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -629,7 +661,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setIsFormOpen(false)}
+                  onClick={() => { setIsFormOpen(false); setEditingNovelty(null); }}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cancelar
@@ -638,7 +670,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                   type="submit"
                   className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
                 >
-                  Registrar
+                  {editingNovelty ? 'Actualizar' : 'Registrar'}
                 </button>
               </div>
             </form>
