@@ -3,6 +3,9 @@ import { Calculator, Download, AlertCircle, TrendingUp, CreditCard } from 'lucid
 import { Employee, Novelty, PayrollCalculation, AdvancePayment, DeductionRates, MINIMUM_SALARY_COLOMBIA, TRANSPORT_ALLOWANCE } from '../types';
 import { getDaysInMonth, formatMonthYear, parseMonthString, isEmployeeActiveInMonth } from '../utils/dateUtils';
 
+const PAYROLL_DAYS = 30;
+const DAILY_TRANSPORT_ALLOWANCE = TRANSPORT_ALLOWANCE / PAYROLL_DAYS;
+
 interface PayrollCalculatorProps {
   employees: Employee[];
   novelties: Novelty[];
@@ -27,9 +30,8 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   const calculatePayroll = () => {
     setIsCalculating(true);
     
-    const { year, month } = parseMonthString(selectedMonth);
-    const daysInMonth = getDaysInMonth(year, month);
-    
+    // const { year, month } = parseMonthString(selectedMonth);
+    // const daysInMonth = getDaysInMonth(year, month);
     // Filter employees who were active (hired before or during) the selected month
     const activeEmployees = employees.filter(employee => 
       isEmployeeActiveInMonth(employee, selectedMonth)
@@ -42,20 +44,21 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       // Calculate worked days for the month (total days in month, minus absences from THIS month)
       const monthlyNovelties = employeeNovelties.filter(n => n.date.startsWith(selectedMonth));
       const monthlyDiscountedDays = monthlyNovelties.reduce((sum, n) => sum + n.discountDays, 0);
-      const workedDaysThisMonth = Math.max(0, daysInMonth - monthlyDiscountedDays);
+      const workedDaysThisMonth = Math.max(0, PAYROLL_DAYS - monthlyDiscountedDays);
       
       // Calculate daily salary
-      const dailySalary = employee.salary / 30; // Always use 30 for daily salary calculation
+      const dailySalary = employee.salary / PAYROLL_DAYS; // Always use 30 for daily salary calculation
       
       // Calculate gross salary based on worked days this month
       const grossSalary = dailySalary * workedDaysThisMonth;
       
       // Transport allowance (only for NOMINA employees earning less than 2 minimum salaries)
       const transportAllowance = (
-        employee.contractType === 'NOMINA' && 
+        employee.contractType === 'NOMINA' &&
         employee.salary < (MINIMUM_SALARY_COLOMBIA * 2)
-      ) ? (deductionRates.transportAllowance * workedDaysThisMonth) / 30 : 0;
-      
+        // ) ? (deductionRates.transportAllowance * workedDaysThisMonth) / PAYROLL_DAYS : 0;
+        ) ? DAILY_TRANSPORT_ALLOWANCE * workedDaysThisMonth : 0;
+        
       // Calculate bonuses from novelties of this month
       const bonusCalculations = calculateBonuses(monthlyNovelties, deductionRates);
       const bonuses = bonusCalculations.total;
@@ -75,7 +78,8 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       return {
         employee,
         workedDays: workedDaysThisMonth,
-        totalDaysInMonth: daysInMonth,
+        // totalDaysInMonth: daysInMonth,
+        totalDaysInMonth: PAYROLL_DAYS,
         baseSalary: employee.salary,
         discountedDays: monthlyDiscountedDays,
         transportAllowance,
