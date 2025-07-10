@@ -22,7 +22,20 @@ function useLocalStorage<T>(key: string, defaultValue: T) {
   const [value, setValue] = useState<T>(() => {
     try {
       const stored = localStorage.getItem(key);
-      return stored ? (JSON.parse(stored) as T) : defaultValue;
+      if (stored) {
+        const parsedValue = JSON.parse(stored);
+        // If defaultValue is an array, ensure we return an array
+        if (Array.isArray(defaultValue)) {
+          return Array.isArray(parsedValue) ? parsedValue : defaultValue;
+        }
+        // For objects, merge with defaultValue to ensure all properties exist
+        if (typeof defaultValue === 'object' && defaultValue !== null && !Array.isArray(defaultValue)) {
+          return { ...(defaultValue as any), ...(parsedValue as any) } as T;
+        }
+        // For primitive values, return parsed value directly
+        return parsedValue;
+      }
+      return defaultValue;
     } catch {
       return defaultValue;
     }
