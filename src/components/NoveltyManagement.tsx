@@ -30,6 +30,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
   const [editingEmployees, setEditingEmployees] = useState<Set<string>>(new Set());
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   
+  const [formCategory, setFormCategory] = useState<string>('');
   const [formData, setFormData] = useState({
     employeeId: '',
     type: 'ABSENCE' as Novelty['type'],
@@ -171,6 +172,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
       description: '',
       value: '1',
     });
+    setFormCategory('');
     setEditingNovelty(null);
     setIsFormOpen(false);
   };
@@ -198,18 +200,26 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
       description: novelty.description,
       value: value.toString(),
     });
+    const category = noveltyCategories.find(c =>
+      c.types.some(t => t.value === novelty.type)
+    );
+    setFormCategory(category?.id || '');
     setEditingNovelty(novelty);
     setIsFormOpen(true);
   };
 
-  const handleAddForEmployee = (employeeId: string) => {
+  const handleAddForEmployee = (employeeId: string, categoryId?: string) => {
+    const category = categoryId
+      ? noveltyCategories.find(c => c.id === categoryId)
+      : undefined;
     setFormData({
       employeeId,
-      type: 'ABSENCE',
+      type: (category?.types[0].value || 'ABSENCE') as Novelty['type'],
       date: new Date().toISOString().slice(0, 10),
       description: '',
       value: '1',
     });
+    setFormCategory(categoryId || '');
     setEditingNovelty(null);
     setIsFormOpen(true);
   };
@@ -504,13 +514,28 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                     <p className="text-sm text-gray-500">{employee.contractType}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => handleAddForEmployee(employee.id)}
-                  className="text-orange-600 hover:text-orange-800 flex items-center space-x-1"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Añadir Novedad</span>
-                </button>
+                <div className="flex items-center space-x-2">
+                  {noveltyCategories.map((category) => {
+                    const Icon = category.icon;
+                    const colorClasses = {
+                      red: 'bg-red-100 text-red-700 hover:bg-red-200 hover:text-red-800',
+                      blue: 'bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800',
+                      green: 'bg-green-100 text-green-700 hover:bg-green-200 hover:text-green-800',
+                      purple: 'bg-purple-100 text-purple-700 hover:bg-purple-200 hover:text-purple-800'
+                    };
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => handleAddForEmployee(employee.id, category.id)}
+                        className={`flex items-center space-x-1 px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 hover:shadow-md ${colorClasses[category.color as keyof typeof colorClasses]}`}
+                        title={category.name}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{category.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -603,15 +628,17 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                   onChange={(e) => setFormData({ ...formData, type: e.target.value as Novelty['type'] })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 >
-                  {noveltyCategories.map((category) => (
-                    <optgroup key={category.id} label={category.name}>
-                      {category.types.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
+                  {noveltyCategories
+                    .filter((cat) => !formCategory || cat.id === formCategory)
+                    .map((category) => (
+                      <optgroup key={category.id} label={category.name}>
+                        {category.types.map((type) => (
+                          <option key={type.value} value={type.value}>
+                            {type.label}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
                 </select>
               </div>
               
