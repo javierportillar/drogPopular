@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Calendar, User, AlertTriangle, Heart, Plane, Gift, Clock, DollarSign, Save, X, Trash2, Edit } from 'lucide-react';
+import { Plus, Calendar, User, AlertTriangle, Heart, Plane, Gift, DollarSign, Save, X, Trash2, Edit } from 'lucide-react';
 import { Employee, Novelty } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
 
@@ -7,7 +7,6 @@ interface NoveltyManagementProps {
   employees: Employee[];
   novelties: Novelty[];
   setNovelties: (novelties: Novelty[]) => void;
-  setEmployees: (employees: Employee[]) => void;
 }
 
 interface BulkNoveltyData {
@@ -18,11 +17,10 @@ interface BulkNoveltyData {
   };
 }
 
-export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({ 
-  employees, 
-  novelties, 
-  setNovelties, 
-  setEmployees 
+export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
+  employees,
+  novelties,
+  setNovelties
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
@@ -83,6 +81,20 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
         { value: 'NIGHT_SURCHARGE', label: 'Recargos nocturnos', unitType: 'HOURS' as const },
         { value: 'SUNDAY_WORK', label: 'Festivos', unitType: 'DAYS' as const },
         { value: 'GAS_ALLOWANCE', label: 'Auxilio de gasolina', unitType: 'MONEY' as const },
+      ]
+    },
+    {
+      id: 'deductions_q2',
+      name: 'Deducciones Quincena 2',
+      icon: DollarSign,
+      color: 'yellow',
+      types: [
+        { value: 'PLAN_CORPORATIVO', label: 'Plan corporativo', unitType: 'MONEY' as const },
+        { value: 'RECORDAR', label: 'Recordar', unitType: 'MONEY' as const },
+        { value: 'INVENTARIOS_CRUCES', label: 'Inventarios y cruces', unitType: 'MONEY' as const },
+        { value: 'MULTAS', label: 'Multas', unitType: 'MONEY' as const },
+        { value: 'FONDO_EMPLEADOS', label: 'Fondo de empleados', unitType: 'MONEY' as const },
+        { value: 'CARTERA_EMPLEADOS', label: 'Cartera empleados', unitType: 'MONEY' as const },
       ]
     }
   ];
