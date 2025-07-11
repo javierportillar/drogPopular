@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calculator, Download, AlertCircle, TrendingUp, CreditCard } from 'lucide-react';
+import { Calculator, Download, AlertCircle, TrendingUp, CreditCard, ZoomIn, ZoomOut } from 'lucide-react';
 import { Employee, Novelty, PayrollCalculation, AdvancePayment, DeductionRates, MINIMUM_SALARY_COLOMBIA, TRANSPORT_ALLOWANCE } from '../types';
 import { getDaysInMonth, formatMonthYear, parseMonthString, isEmployeeActiveInMonth } from '../utils/dateUtils';
 
@@ -26,12 +26,11 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [isCalculating, setIsCalculating] = useState(false);
+  const [tableZoom, setTableZoom] = useState(100);
 
   const calculatePayroll = () => {
     setIsCalculating(true);
     
-    // const { year, month } = parseMonthString(selectedMonth);
-    // const daysInMonth = getDaysInMonth(year, month);
     // Filter employees who were active (hired before or during) the selected month
     const activeEmployees = employees.filter(employee => 
       isEmployeeActiveInMonth(employee, selectedMonth)
@@ -56,7 +55,6 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       const transportAllowance = (
         employee.contractType === 'NOMINA' &&
         employee.salary < (MINIMUM_SALARY_COLOMBIA * 2)
-        // ) ? (deductionRates.transportAllowance * workedDaysThisMonth) / PAYROLL_DAYS : 0;
         ) ? DAILY_TRANSPORT_ALLOWANCE * workedDaysThisMonth : 0;
         
       // Calculate bonuses from novelties of this month
@@ -111,7 +109,6 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       return {
         employee,
         workedDays: workedDaysThisMonth,
-        // totalDaysInMonth: daysInMonth,
         totalDaysInMonth: PAYROLL_DAYS,
         baseSalary: employee.salary,
         discountedDays: monthlyDiscountedDays,
@@ -327,6 +324,14 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     .filter(a => a.month === selectedMonth)
     .reduce((sum, advance) => sum + advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0), 0);
 
+  const handleZoomIn = () => {
+    setTableZoom(prev => Math.min(prev + 10, 150));
+  };
+
+  const handleZoomOut = () => {
+    setTableZoom(prev => Math.max(prev - 10, 60));
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -369,13 +374,32 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         <div className="bg-white rounded-lg shadow-md border border-gray-200 p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Resumen de Nómina - {formatMonthYear(selectedMonth)}</h3>
-            <button
-              onClick={exportToTxt}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              <span>Exportar TXT</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-2">
+                <button
+                  onClick={handleZoomOut}
+                  className="p-1 hover:bg-gray-200 rounded"
+                  title="Reducir zoom"
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </button>
+                <span className="text-sm font-medium px-2">{tableZoom}%</span>
+                <button
+                  onClick={handleZoomIn}
+                  className="p-1 hover:bg-gray-200 rounded"
+                  title="Aumentar zoom"
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                onClick={exportToTxt}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span>Exportar TXT</span>
+              </button>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -412,120 +436,186 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
             </div>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Empleado
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Días Trabajados
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Salario Bruto
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aux. Transporte
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Adiciones
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salud</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pensión</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausencias $</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Corp.</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recordar</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventarios</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Multas</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fondo Emp.</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cartera Emp.</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adelantos</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ded.</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Salario Neto
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {payrollCalculations.map((calc) => (
-                  <tr key={calc.employee.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {calc.employee.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {calc.employee.contractType}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>
-                        <span className="font-medium">{calc.workedDays}/{calc.totalDaysInMonth}</span>
-                        {calc.discountedDays > 0 && (
-                          <div className="text-red-600 text-xs">
-                            -{calc.discountedDays} días descontados
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${(calc.grossSalary ?? 0).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      ${(calc.transportAllowance ?? 0).toLocaleString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {(calc.bonusCalculations?.total || 0) > 0 ? (
-                        <div className="space-y-1">
-                          {(calc.bonusCalculations?.fixedCompensation || 0) > 0 && (
-                            <div className="text-green-600 text-xs">Compensatorios: ${(calc.bonusCalculations?.fixedCompensation || 0).toLocaleString()}</div>
-                          )}
-                          {(calc.bonusCalculations?.salesBonus || 0) > 0 && (
-                            <div className="text-green-600 text-xs">Bonif. venta: ${(calc.bonusCalculations?.salesBonus || 0).toLocaleString()}</div>
-                          )}
-                          {(calc.bonusCalculations?.fixedOvertime || 0) > 0 && (
-                            <div className="text-green-600 text-xs">H. extra fijas: ${(calc.bonusCalculations?.fixedOvertime || 0).toLocaleString()}</div>
-                          )}
-                          {(calc.bonusCalculations?.unexpectedOvertime || 0) > 0 && (
-                            <div className="text-green-600 text-xs">H. extra NE: ${(calc.bonusCalculations?.unexpectedOvertime || 0).toLocaleString()}</div>
-                          )}
-                          {(calc.bonusCalculations?.nightSurcharge || 0) > 0 && (
-                            <div className="text-green-600 text-xs">Recargos noc.: ${(calc.bonusCalculations?.nightSurcharge || 0).toLocaleString()}</div>
-                          )}
-                          {(calc.bonusCalculations?.sundayWork || 0) > 0 && (
-                            <div className="text-green-600 text-xs">Festivos: ${(calc.bonusCalculations?.sundayWork || 0).toLocaleString()}</div>
-                          )}
-                          {(calc.bonusCalculations?.gasAllowance || 0) > 0 && (
-                            <div className="text-green-600 text-xs">Aux. gasolina: ${(calc.bonusCalculations?.gasAllowance || 0).toLocaleString()}</div>
-                          )}
-                          <div className="font-medium text-green-600 border-t pt-1">
-                            Total: ${(calc.bonusCalculations?.total || 0).toLocaleString()}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.health ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.pension ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.absence ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.planCorporativo ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.recordar ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.inventariosCruces ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.multas ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.fondoEmpleados ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.carteraEmpleados ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${(calc.deductions?.advance ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">${(calc.deductions?.total ?? 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                      ${(calc.netSalary ?? 0).toLocaleString()}
-                    </td>
+          <div className="overflow-x-auto" style={{ fontSize: `${tableZoom}%` }}>
+            <div className="min-w-full" style={{ overflowX: 'scroll' }}>
+              <table className="w-full" style={{ fontSize: `${tableZoom / 100}em` }}>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Empleado
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Días Trabajados
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Salario Bruto
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Aux. Transporte
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Adiciones
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Salud</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pensión</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ausencias $</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan Corp.</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recordar</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventarios</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Multas</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fondo Emp.</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cartera Emp.</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adelantos</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ded.</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Salario Neto
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {payrollCalculations.map((calc) => (
+                    <tr key={calc.employee.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {calc.employee.name}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {calc.employee.contractType}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          <span className="font-medium">{calc.workedDays}/{calc.totalDaysInMonth}</span>
+                          {calc.discountedDays > 0 && (
+                            <div className="text-red-600 text-xs">
+                              -{calc.discountedDays} días descontados
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${(calc.grossSalary ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {(calc.transportAllowance ?? 0) > 0 ? (
+                          <span className="text-green-600 font-medium">+${(calc.transportAllowance ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        {(calc.bonusCalculations?.total || 0) > 0 ? (
+                          <div className="space-y-1">
+                            {(calc.bonusCalculations?.fixedCompensation || 0) > 0 && (
+                              <div className="text-green-600 text-xs">Compensatorios: +${(calc.bonusCalculations?.fixedCompensation || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.salesBonus || 0) > 0 && (
+                              <div className="text-green-600 text-xs">Bonif. venta: +${(calc.bonusCalculations?.salesBonus || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.fixedOvertime || 0) > 0 && (
+                              <div className="text-green-600 text-xs">H. extra fijas: +${(calc.bonusCalculations?.fixedOvertime || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.unexpectedOvertime || 0) > 0 && (
+                              <div className="text-green-600 text-xs">H. extra NE: +${(calc.bonusCalculations?.unexpectedOvertime || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.nightSurcharge || 0) > 0 && (
+                              <div className="text-green-600 text-xs">Recargos noc.: +${(calc.bonusCalculations?.nightSurcharge || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.sundayWork || 0) > 0 && (
+                              <div className="text-green-600 text-xs">Festivos: +${(calc.bonusCalculations?.sundayWork || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.gasAllowance || 0) > 0 && (
+                              <div className="text-green-600 text-xs">Aux. gasolina: +${(calc.bonusCalculations?.gasAllowance || 0).toLocaleString()}</div>
+                            )}
+                            <div className="font-medium text-green-600 border-t pt-1">
+                              Total: +${(calc.bonusCalculations?.total || 0).toLocaleString()}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.health ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.health ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.pension ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.pension ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.absence ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.absence ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.planCorporativo ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.planCorporativo ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.recordar ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.recordar ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.inventariosCruces ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.inventariosCruces ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.multas ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.multas ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.fondoEmpleados ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.fondoEmpleados ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.carteraEmpleados ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.carteraEmpleados ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        {(calc.deductions?.advance ?? 0) > 0 ? (
+                          <span className="text-red-600">-${(calc.deductions?.advance ?? 0).toLocaleString()}</span>
+                        ) : (
+                          <span className="text-black">-</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-black">${(calc.deductions?.total ?? 0).toLocaleString()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">
+                        ${(calc.netSalary ?? 0).toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

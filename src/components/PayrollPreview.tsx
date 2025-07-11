@@ -141,6 +141,48 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                         <span className="text-red-600">-${calc.deductions.solidarity.toLocaleString()}</span>
                       </div>
                     )}
+                    {calc.deductions.absence > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Ausencias</span>
+                        <span className="text-red-600">-${calc.deductions.absence.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {calc.deductions.planCorporativo > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Plan corporativo</span>
+                        <span className="text-red-600">-${calc.deductions.planCorporativo.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {calc.deductions.recordar > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Recordar</span>
+                        <span className="text-red-600">-${calc.deductions.recordar.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {calc.deductions.inventariosCruces > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Inventarios y cruces</span>
+                        <span className="text-red-600">-${calc.deductions.inventariosCruces.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {calc.deductions.multas > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Multas</span>
+                        <span className="text-red-600">-${calc.deductions.multas.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {calc.deductions.fondoEmpleados > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Fondo de empleados</span>
+                        <span className="text-red-600">-${calc.deductions.fondoEmpleados.toLocaleString()}</span>
+                      </div>
+                    )}
+                    {calc.deductions.carteraEmpleados > 0 && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-600">Cartera empleados</span>
+                        <span className="text-red-600">-${calc.deductions.carteraEmpleados.toLocaleString()}</span>
+                      </div>
+                    )}
                     {calc.deductions.advance > 0 && (
                       <div className="flex justify-between items-center text-sm">
                         <span className="text-gray-600">Adelantos</span>
@@ -189,11 +231,20 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                               };
                               return typeLabels[novelty.type] || novelty.type;
                             })()}
-                            {novelty.discountDays > 0 && (
-                              <span className="text-red-600 ml-1">(-{novelty.discountDays} días)</span>
+                            {(novelty.discountDays > 0 || ['PLAN_CORPORATIVO', 'RECORDAR', 'INVENTARIOS_CRUCES', 'MULTAS', 'FONDO_EMPLEADOS', 'CARTERA_EMPLEADOS'].includes(novelty.type)) && (
+                              <span className="text-red-600 ml-1">
+                                {novelty.discountDays > 0 && `(-${novelty.discountDays} días)`}
+                              </span>
                             )}
-                            {novelty.bonusAmount > 0 && (
-                              <span className="text-green-600 ml-1">(+${novelty.bonusAmount.toLocaleString()})</span>
+                           {novelty.bonusAmount > 0 && !['PLAN_CORPORATIVO', 'RECORDAR', 'INVENTARIOS_CRUCES', 'MULTAS', 'FONDO_EMPLEADOS', 'CARTERA_EMPLEADOS'].includes(novelty.type) && (
+                              <span className={`ml-1 ${['PLAN_CORPORATIVO', 'RECORDAR', 'INVENTARIOS_CRUCES', 'MULTAS', 'FONDO_EMPLEADOS', 'CARTERA_EMPLEADOS'].includes(novelty.type) ? 'text-red-600' : 'text-green-600'}`}>
+                               (+$${novelty.bonusAmount.toLocaleString()})
+                             </span>
+                           )}
+                           {novelty.bonusAmount > 0 && ['PLAN_CORPORATIVO', 'RECORDAR', 'INVENTARIOS_CRUCES', 'MULTAS', 'FONDO_EMPLEADOS', 'CARTERA_EMPLEADOS'].includes(novelty.type) && (
+                             <span className="text-red-600 ml-1">
+                               (-$${novelty.bonusAmount.toLocaleString()})
+                              </span>
                             )}
                             {novelty.hours && novelty.hours > 0 && (
                               <span className="text-blue-600 ml-1">({novelty.hours} horas)</span>

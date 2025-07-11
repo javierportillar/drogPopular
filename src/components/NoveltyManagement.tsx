@@ -581,7 +581,10 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`text-sm font-medium ${isDeduction ? 'text-red-600' : 'text-green-600'}`}>{isDeduction ? '-' : '+'}{getNoveltyDisplayValue(novelty)}</span>
+                            <span className={`text-sm font-medium ${isDeduction || ['PLAN_CORPORATIVO', 'RECORDAR', 'INVENTARIOS_CRUCES', 'MULTAS', 'FONDO_EMPLEADOS', 'CARTERA_EMPLEADOS'].includes(novelty.type) ? 'text-red-600' : 'text-green-600'}`}>
+                              {isDeduction || ['PLAN_CORPORATIVO', 'RECORDAR', 'INVENTARIOS_CRUCES', 'MULTAS', 'FONDO_EMPLEADOS', 'CARTERA_EMPLEADOS'].includes(novelty.type) ? '-' : '+'}
+                              {getNoveltyDisplayValue(novelty)}
+                            </span>
                           </td>
                           <td className="px-6 py-4">
                             <span className="text-sm text-gray-900">{novelty.description || '-'}</span>
