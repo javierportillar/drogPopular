@@ -106,30 +106,30 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       }
       
       // Calculate daily salary
-      const dailySalary = employee.salary / PAYROLL_DAYS; // Always use 30 for daily salary calculation
-      
+      const dailySalary = roundToNearest500Or1000(employee.salary / PAYROLL_DAYS); // Always use 30 for daily salary calculation
+
       // Calculate gross salary based on worked days this month
-      const grossSalary = dailySalary * workedDaysThisMonth;
-      
+      const grossSalary = roundToNearest500Or1000(dailySalary * workedDaysThisMonth);
+
       // Calculate daily transport allowance using configurable rate
-      const dailyTransportAllowance = deductionRates.transportAllowance / PAYROLL_DAYS;
-      
+      const dailyTransportAllowance = roundToNearest500Or1000(deductionRates.transportAllowance / PAYROLL_DAYS);
+
       // Transport allowance (only for NOMINA employees earning less than 2 minimum salaries)
       const transportAllowance = (
         employee.contractType === 'NOMINA' &&
         employee.salary < (MINIMUM_SALARY_COLOMBIA * 2)
-        ) ? dailyTransportAllowance * workedDaysThisMonth : 0;
+        ) ? roundToNearest500Or1000(dailyTransportAllowance * workedDaysThisMonth) : 0;
         
       // Calculate bonuses from novelties of this month
       const bonusCalculations = calculateBonuses(monthlyNovelties, deductionRates);
       
       // Calculate deductions using configurable rates
-      const healthDeduction = grossSalary * (deductionRates.health / 100);
-      const pensionDeduction = employee.isPensioned ? 0 : grossSalary * (deductionRates.pension / 100);
-      const solidarityDeduction = employee.salary >= (MINIMUM_SALARY_COLOMBIA * 4) ? 
-        grossSalary * (deductionRates.solidarity / 100) : 0;
-      
-      const absenceDeduction = dailySalary * monthlyDiscountedDays;
+      const healthDeduction = roundToNearest500Or1000(grossSalary * (deductionRates.health / 100));
+      const pensionDeduction = employee.isPensioned ? 0 : roundToNearest500Or1000(grossSalary * (deductionRates.pension / 100));
+      const solidarityDeduction = employee.salary >= (MINIMUM_SALARY_COLOMBIA * 4) ?
+        roundToNearest500Or1000(grossSalary * (deductionRates.solidarity / 100)) : 0;
+
+      const absenceDeduction = roundToNearest500Or1000(dailySalary * monthlyDiscountedDays);
 
       const planCorporativo = monthlyNovelties
         .filter(n => n.type === 'PLAN_CORPORATIVO')
@@ -150,9 +150,11 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         .filter(n => n.type === 'CARTERA_EMPLEADOS')
         .reduce((sum, n) => sum + n.bonusAmount, 0);
 
-      const totalAdvances = employeeAdvances.reduce((sum, adv) => sum + adv.amount, 0);
+      const totalAdvances = roundToNearest500Or1000(
+        employeeAdvances.reduce((sum, adv) => sum + adv.amount, 0)
+      );
 
-      const totalDeductions =
+      const totalDeductions = roundToNearest500Or1000(
         healthDeduction +
         pensionDeduction +
         solidarityDeduction +
@@ -163,11 +165,12 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         multas +
         fondoEmpleadosDed +
         carteraEmpleadosDed +
-        totalAdvances;
+        totalAdvances
+      );
       
       const rawTotalEarned = grossSalary + transportAllowance + bonusCalculations.total;
       const totalEarned = roundToNearest500Or1000(rawTotalEarned);
-      const netSalary = totalEarned - totalDeductions;
+      const netSalary = roundToNearest500Or1000(totalEarned - totalDeductions);
       
       return {
         employee,
@@ -219,48 +222,58 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     novelties.forEach(novelty => {
       switch (novelty.type) {
         case 'FIXED_COMPENSATION':
-          calculations.fixedCompensation += novelty.bonusAmount;
+          calculations.fixedCompensation += roundToNearest500Or1000(novelty.bonusAmount);
           break;
         case 'SALES_BONUS':
-          calculations.salesBonus += novelty.bonusAmount;
+          calculations.salesBonus += roundToNearest500Or1000(novelty.bonusAmount);
           break;
         case 'FIXED_OVERTIME': {
           // Horas extra fijas: horas × hora ordinaria
-          const fixedOvertimeAmount = novelty.bonusAmount || ((novelty.hours || 0) * rates.ordinaryHour);
+          const fixedOvertimeAmount = roundToNearest500Or1000(
+            novelty.bonusAmount || ((novelty.hours || 0) * rates.ordinaryHour)
+          );
           calculations.fixedOvertime += fixedOvertimeAmount;
           break;
         }
         case 'UNEXPECTED_OVERTIME': {
           // Horas extra NE: horas × horas extra
-          const unexpectedOvertimeAmount = novelty.bonusAmount || ((novelty.hours || 0) * rates.overtime);
+          const unexpectedOvertimeAmount = roundToNearest500Or1000(
+            novelty.bonusAmount || ((novelty.hours || 0) * rates.overtime)
+          );
           calculations.unexpectedOvertime += unexpectedOvertimeAmount;
           break;
         }
         case 'NIGHT_SURCHARGE': {
           // Recargos nocturnos: horas × recargos nocturnos
-          const nightSurchargeAmount = novelty.bonusAmount || ((novelty.hours || 0) * rates.nightSurcharge);
+          const nightSurchargeAmount = roundToNearest500Or1000(
+            novelty.bonusAmount || ((novelty.hours || 0) * rates.nightSurcharge)
+          );
           calculations.nightSurcharge += nightSurchargeAmount;
           break;
         }
         case 'SUNDAY_WORK': {
           // Festivos: días × dominical 1
-          const sundayWorkAmount = novelty.bonusAmount || ((novelty.days || 0) * rates.sunday1);
+          const sundayWorkAmount = roundToNearest500Or1000(
+            novelty.bonusAmount || ((novelty.days || 0) * rates.sunday1)
+          );
           calculations.sundayWork += sundayWorkAmount;
           break;
         }
         case 'GAS_ALLOWANCE':
-          calculations.gasAllowance += novelty.bonusAmount;
+          calculations.gasAllowance += roundToNearest500Or1000(novelty.bonusAmount);
           break;
         case 'STUDY_LICENSE':
-          calculations.studyLicense += novelty.bonusAmount;
+          calculations.studyLicense += roundToNearest500Or1000(novelty.bonusAmount);
           break;
       }
     });
 
-    calculations.total = calculations.fixedCompensation + calculations.salesBonus + 
-                       calculations.fixedOvertime + calculations.unexpectedOvertime + 
-                       calculations.nightSurcharge + calculations.sundayWork + 
-                       calculations.gasAllowance + calculations.studyLicense;
+    calculations.total = roundToNearest500Or1000(
+      calculations.fixedCompensation + calculations.salesBonus +
+      calculations.fixedOvertime + calculations.unexpectedOvertime +
+      calculations.nightSurcharge + calculations.sundayWork +
+      calculations.gasAllowance + calculations.studyLicense
+    );
 
     return calculations;
   };
