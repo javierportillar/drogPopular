@@ -105,14 +105,19 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         workedDaysThisMonth = Math.max(0, PAYROLL_DAYS - monthlyDiscountedDays);
       }
       
+
       // Calculate daily values without rounding first
       const dailySalary = employee.salary / PAYROLL_DAYS; // Always use 30 for daily salary calculation
+
+
 
       // Calculate gross salary based on worked days this month
       const grossSalary = roundToNearest500Or1000(dailySalary * workedDaysThisMonth);
 
       // Calculate daily transport allowance using configurable rate
+
       const dailyTransportAllowance = deductionRates.transportAllowance / PAYROLL_DAYS;
+
 
       // Transport allowance (only for NOMINA employees earning less than 2 minimum salaries)
       const transportAllowance = (
