@@ -2,21 +2,10 @@ import React, { useState } from 'react';
 import { Calculator, Download, AlertCircle, TrendingUp, CreditCard, ZoomIn, ZoomOut } from 'lucide-react';
 import { Employee, Novelty, PayrollCalculation, AdvancePayment, DeductionRates, MINIMUM_SALARY_COLOMBIA, TRANSPORT_ALLOWANCE } from '../types';
 import { getDaysInMonth, formatMonthYear, parseMonthString, isEmployeeActiveInMonth } from '../utils/dateUtils';
+import { roundToNearest500Or1000 } from '../utils/financeUtils';
 
 const PAYROLL_DAYS = 30;
 
-// Function to round to nearest 500 or 1000
-const roundToNearest500Or1000 = (amount: number): number => {
-  const remainder = amount % 1000;
-  
-  if (remainder <= 500) {
-    // Round down to nearest 1000, then add 500 if remainder > 0
-    return Math.floor(amount / 1000) * 1000 + (remainder > 0 ? 500 : 0);
-  } else {
-    // Round up to next 1000
-    return Math.ceil(amount / 1000) * 1000;
-  }
-};
 
 interface PayrollCalculatorProps {
   employees: Employee[];
