@@ -5,6 +5,19 @@ import { getDaysInMonth, formatMonthYear, parseMonthString, isEmployeeActiveInMo
 
 const PAYROLL_DAYS = 30;
 
+// Function to round to nearest 500 or 1000
+const roundToNearest500Or1000 = (amount: number): number => {
+  const remainder = amount % 1000;
+  
+  if (remainder <= 500) {
+    // Round down to nearest 1000, then add 500 if remainder > 0
+    return Math.floor(amount / 1000) * 1000 + (remainder > 0 ? 500 : 0);
+  } else {
+    // Round up to next 1000
+    return Math.ceil(amount / 1000) * 1000;
+  }
+};
+
 interface PayrollCalculatorProps {
   employees: Employee[];
   novelties: Novelty[];
@@ -36,13 +49,72 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     );
     
     const calculations: PayrollCalculation[] = activeEmployees.map(employee => {
-      const employeeNovelties = novelties.filter(n => n.employeeId === employee.id);
+      // Get all novelties for this employee
+      const allEmployeeNovelties = novelties.filter(n => n.employeeId === employee.id);
+      
+      // Get novelties that apply to the selected month
+      const monthlyNovelties = allEmployeeNovelties.filter(n => {
+        const noveltyMonth = n.date.slice(0, 7);
+        
+        // If it's a recurring license, check if it should apply to this month
+        if (n.isRecurring && n.startMonth) {
+          return n.startMonth <= selectedMonth;
+        }
+        
+        // For non-recurring novelties, only include if they're for this specific month
+        return noveltyMonth === selectedMonth;
+      });
+      
+      // For recurring licenses, create a virtual novelty for this month if it doesn't exist
+      const recurringLicenses = allEmployeeNovelties.filter(n => 
+        n.isRecurring && 
+        n.startMonth && 
+        n.startMonth <= selectedMonth &&
+        n.type === 'STUDY_LICENSE'
+      );
+      
+      // Add recurring licenses that don't have a specific entry for this month
+      recurringLicenses.forEach(license => {
+        const existsForThisMonth = monthlyNovelties.some(n => 
+          n.type === 'STUDY_LICENSE' && 
+          n.date.startsWith(selectedMonth)
+        );
+        
+        if (!existsForThisMonth) {
+          monthlyNovelties.push({
+            ...license,
+            id: `recurring-${license.id}-${selectedMonth}`,
+            date: `${selectedMonth}-01`,
+            description: `${license.description} (Licencia recurrente desde ${license.startMonth})`
+          });
+        }
+      });
+      
       const employeeAdvances = advances.filter(a => a.employeeId === employee.id && a.month === selectedMonth);
       
       // Calculate worked days for the month (total days in month, minus absences from THIS month)
-      const monthlyNovelties = employeeNovelties.filter(n => n.date.startsWith(selectedMonth));
       const monthlyDiscountedDays = monthlyNovelties.reduce((sum, n) => sum + n.discountDays, 0);
-      const workedDaysThisMonth = Math.max(0, PAYROLL_DAYS - monthlyDiscountedDays);
+      
+      // For new employees, calculate proportional days based on hire date
+      let workedDaysThisMonth = PAYROLL_DAYS;
+      
+      if (employee.createdDate) {
+        const hireDate = new Date(employee.createdDate);
+        const { year: selectedYear, month: selectedMonthNum } = parseMonthString(selectedMonth);
+        const monthStart = new Date(selectedYear, selectedMonthNum - 1, 1);
+        const monthEnd = new Date(selectedYear, selectedMonthNum, 0);
+        
+        // If hired during this month, calculate proportional days
+        if (hireDate >= monthStart && hireDate <= monthEnd) {
+          const daysFromHire = monthEnd.getDate() - hireDate.getDate() + 1;
+          workedDaysThisMonth = Math.max(0, daysFromHire - monthlyDiscountedDays);
+        } else {
+          // If hired before this month, use full month minus absences
+          workedDaysThisMonth = Math.max(0, PAYROLL_DAYS - monthlyDiscountedDays);
+        }
+      } else {
+        workedDaysThisMonth = Math.max(0, PAYROLL_DAYS - monthlyDiscountedDays);
+      }
       
       // Calculate daily salary
       const dailySalary = employee.salary / PAYROLL_DAYS; // Always use 30 for daily salary calculation
@@ -103,8 +175,10 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         fondoEmpleadosDed +
         carteraEmpleadosDed +
         totalAdvances;
-      const netSalary = grossSalary + transportAllowance + bonusCalculations.total - totalDeductions;
-      const totalEarned = grossSalary + transportAllowance + bonusCalculations.total;
+      
+      const rawTotalEarned = grossSalary + transportAllowance + bonusCalculations.total;
+      const totalEarned = roundToNearest500Or1000(rawTotalEarned);
+      const netSalary = totalEarned - totalDeductions;
       
       return {
         employee,
@@ -450,10 +524,13 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
                       Empleado
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sueldo Básico
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Días Trabajados
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Salario Bruto
+                      Sueldo Mes
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Aux. Transporte
@@ -494,15 +571,15 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${(calc.baseSalary ?? 0).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         <div>
                           <span className="font-medium">{calc.workedDays}/{calc.totalDaysInMonth}</span>
                           {calc.discountedDays > 0 && (
                             <div className="text-red-600 text-xs">
                               -{calc.discountedDays} días descontados
                             </div>
-                          )}
-                          {(calc.bonusCalculations?.studyLicense || 0) > 0 && (
-                            <div className="text-green-600 text-xs">Lic. estudio: +${(calc.bonusCalculations?.studyLicense || 0).toLocaleString()}</div>
                           )}
                         </div>
                       </td>
@@ -559,6 +636,9 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
                             )}
                             {(calc.bonusCalculations?.gasAllowance || 0) > 0 && (
                               <div className="text-green-600 text-xs">Aux. gasolina: +${(calc.bonusCalculations?.gasAllowance || 0).toLocaleString()}</div>
+                            )}
+                            {(calc.bonusCalculations?.studyLicense || 0) > 0 && (
+                              <div className="text-green-600 text-xs">Lic. estudio: +${(calc.bonusCalculations?.studyLicense || 0).toLocaleString()}</div>
                             )}
                             <div className="font-medium text-green-600 border-t pt-1">
                               Total: +${(calc.bonusCalculations?.total || 0).toLocaleString()}

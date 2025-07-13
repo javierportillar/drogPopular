@@ -167,7 +167,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
 
     // Check if this is a recurring license
     const isRecurringLicense = formData.type === 'STUDY_LICENSE';
-    const currentMonth = formData.date.slice(0, 7);
+    const noveltyMonth = formData.date.slice(0, 7);
 
     const baseNovelty = {
       employeeId: formData.employeeId,
@@ -181,7 +181,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
       days: typeInfo.unitType === 'DAYS' && !['ABSENCE', 'LATE', 'EARLY_LEAVE', 'MEDICAL_LEAVE', 'VACATION'].includes(formData.type) ? value : undefined,
       unitType: typeInfo.unitType,
       isRecurring: isRecurringLicense,
-      startMonth: isRecurringLicense ? currentMonth : undefined,
+      startMonth: isRecurringLicense ? noveltyMonth : undefined,
     };
 
     if (editingNovelty) {
