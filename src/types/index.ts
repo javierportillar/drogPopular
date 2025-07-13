@@ -10,6 +10,7 @@ export interface Employee {
   salary: number;
   workedDays: number;
   createdDate?: string;
+  isPensioned: boolean;
 }
 
 export interface Novelty {
@@ -34,7 +35,8 @@ export interface Novelty {
     | 'INVENTARIOS_CRUCES'
     | 'MULTAS'
     | 'FONDO_EMPLEADOS'
-    | 'CARTERA_EMPLEADOS';
+    | 'CARTERA_EMPLEADOS'
+    | 'STUDY_LICENSE';
   date: string;
   description: string;
   discountDays: number; // For deductions
@@ -42,6 +44,8 @@ export interface Novelty {
   hours?: number; // For hour-based calculations
   days?: number; // For day-based calculations
   unitType: 'DAYS' | 'MONEY' | 'HOURS'; // To specify what unit is being used
+  isRecurring?: boolean; // For licenses that continue automatically
+  startMonth?: string; // When the recurring license started
 }
 
 export interface PayrollCalculation {
@@ -52,6 +56,7 @@ export interface PayrollCalculation {
   discountedDays: number;
   transportAllowance: number;
   grossSalary: number;
+  totalEarned: number;
   bonuses: number;
   bonusCalculations: {
     fixedCompensation: number;
@@ -61,6 +66,7 @@ export interface PayrollCalculation {
     nightSurcharge: number;
     sundayWork: number;
     gasAllowance: number;
+    studyLicense: number;
     total: number;
   };
   deductions: {
