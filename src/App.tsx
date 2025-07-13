@@ -98,17 +98,7 @@ function App() {
 
   // Auto-apply recurring licenses for new months
   React.useEffect(() => {
-    const currentMonth = new Date().toISOString().slice(0, 7);
-    
-    // Find all recurring licenses
-    const recurringLicenses = novelties.filter(n => 
-      n.isRecurring && 
-      n.startMonth && 
-      n.startMonth <= currentMonth &&
-      n.type === 'STUDY_LICENSE'
-    );
-    
-    // Note: Recurring licenses are now handled dynamically in PayrollCalculator
+    // Note: Recurring licenses are handled dynamically in PayrollCalculator
     // This ensures they appear in the correct month's calculation without creating duplicate entries
   }, [novelties, setNovelties]);
   useEffect(() => {
