@@ -106,18 +106,17 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       }
       
 
-      // Calculate daily values without rounding first
-      const dailySalary = employee.salary / PAYROLL_DAYS; // Always use 30 for daily salary calculation
-
-
+      // Calculate daily values and round immediately to avoid decimals
+      const dailySalary = roundToNearest500Or1000(employee.salary / PAYROLL_DAYS); // Always use 30 for daily salary calculation
 
       // Calculate gross salary based on worked days this month
       const grossSalary = roundToNearest500Or1000(dailySalary * workedDaysThisMonth);
 
       // Calculate daily transport allowance using configurable rate
 
-      const dailyTransportAllowance = deductionRates.transportAllowance / PAYROLL_DAYS;
-
+      const dailyTransportAllowance = roundToNearest500Or1000(
+        deductionRates.transportAllowance / PAYROLL_DAYS
+      );
 
       // Transport allowance (only for NOMINA employees earning less than 2 minimum salaries)
       const transportAllowance = (
@@ -138,22 +137,29 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
 
       const planCorporativo = monthlyNovelties
         .filter(n => n.type === 'PLAN_CORPORATIVO')
-        .reduce((sum, n) => sum + n.bonusAmount, 0);
-      const recordar = monthlyNovelties
+        .reduce((sum, n) => sum + roundToNearest500Or1000(n.bonusAmount), 0);
+        // .reduce((sum, n) => sum + n.bonusAmount, 0);
+        
+        const recordar = monthlyNovelties
         .filter(n => n.type === 'RECORDAR')
-        .reduce((sum, n) => sum + n.bonusAmount, 0);
-      const inventariosCruces = monthlyNovelties
+        .reduce((sum, n) => sum + roundToNearest500Or1000(n.bonusAmount), 0);
+        // .reduce((sum, n) => sum + n.bonusAmount, 0);
+        const inventariosCruces = monthlyNovelties
         .filter(n => n.type === 'INVENTARIOS_CRUCES')
-        .reduce((sum, n) => sum + n.bonusAmount, 0);
-      const multas = monthlyNovelties
+        .reduce((sum, n) => sum + roundToNearest500Or1000(n.bonusAmount), 0);
+        // .reduce((sum, n) => sum + n.bonusAmount, 0);
+        const multas = monthlyNovelties
         .filter(n => n.type === 'MULTAS')
-        .reduce((sum, n) => sum + n.bonusAmount, 0);
-      const fondoEmpleadosDed = monthlyNovelties
+        .reduce((sum, n) => sum + roundToNearest500Or1000(n.bonusAmount), 0);
+        // .reduce((sum, n) => sum + n.bonusAmount, 0);
+        const fondoEmpleadosDed = monthlyNovelties
         .filter(n => n.type === 'FONDO_EMPLEADOS')
-        .reduce((sum, n) => sum + n.bonusAmount, 0);
-      const carteraEmpleadosDed = monthlyNovelties
+        .reduce((sum, n) => sum + roundToNearest500Or1000(n.bonusAmount), 0);
+        // .reduce((sum, n) => sum + n.bonusAmount, 0);
+        const carteraEmpleadosDed = monthlyNovelties
         .filter(n => n.type === 'CARTERA_EMPLEADOS')
-        .reduce((sum, n) => sum + n.bonusAmount, 0);
+        .reduce((sum, n) => sum + roundToNearest500Or1000(n.bonusAmount), 0);
+        // .reduce((sum, n) => sum + n.bonusAmount, 0);
 
       const totalAdvances = roundToNearest500Or1000(
         employeeAdvances.reduce((sum, adv) => sum + adv.amount, 0)
@@ -362,7 +368,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         txtContent += `     - Cartera empleados: $${(calc.deductions?.carteraEmpleados ?? 0).toLocaleString()}\n`;
       }
       if ((calc.deductions?.advance ?? 0) > 0) {
-        txtContent += `     - Adelantos: $${(calc.deductions?.advance ?? 0).toLocaleString()}\n`;
+        txtContent += `     - Anticipo Quincena: $${(calc.deductions?.advance ?? 0).toLocaleString()}\n`;
       }
       txtContent += `     - Total Deducciones: $${(calc.deductions?.total ?? 0).toLocaleString()}\n`;
       txtContent += `   SALARIO NETO: $${(calc.netSalary ?? 0).toLocaleString()}\n`;
@@ -376,7 +382,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       
       const employeeAdvances = advances.filter(a => a.employeeId === calc.employee.id && a.month === selectedMonth);
       if (employeeAdvances.length > 0) {
-        txtContent += `   Adelantos del mes:\n`;
+        txtContent += `   Anticipo Quincena del mes:\n`;
         employeeAdvances.forEach(advance => {
           txtContent += `     - ${advance.date}: $${advance.amount.toLocaleString()} - ${advance.description || 'Sin descripción'}\n`;
         });
@@ -393,7 +399,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     txtContent += `RESUMEN:\n`;
     txtContent += `Total Salarios Brutos: $${payrollCalculations.reduce((sum, calc) => sum + (calc.grossSalary ?? 0), 0).toLocaleString()}\n`;
     txtContent += `Total Deducciones: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.total ?? 0), 0).toLocaleString()}\n`;
-    txtContent += `Total Adelantos: $${totalAdvancesMonth.toLocaleString()}\n`;
+    txtContent += `Total Anticipo Quincena: $${totalAdvancesMonth.toLocaleString()}\n`;
     txtContent += `TOTAL NÓMINA NETA: $${totalNet.toLocaleString()}\n`;
     
     const blob = new Blob([txtContent], { type: 'text/plain' });
@@ -516,7 +522,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
             <div className="bg-purple-50 p-4 rounded-lg">
               <div className="flex items-center space-x-2">
                 <CreditCard className="h-5 w-5 text-purple-600" />
-                <span className="text-sm font-medium text-purple-600">Adelantos</span>
+                <span className="text-sm font-medium text-purple-600">Anticipo Quincena</span>
               </div>
               <p className="text-2xl font-bold text-purple-900">${totalAdvancesMonth.toLocaleString()}</p>
             </div>
@@ -555,9 +561,9 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recordar</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Inventarios</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Multas</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fondo Emp.</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aporte Fondo Emp.</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cartera Emp.</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Adelantos</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Anticipo Quincena</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Ded.</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Salario Neto

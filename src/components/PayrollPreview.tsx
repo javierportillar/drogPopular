@@ -62,7 +62,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
             <div className="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-lg">
               <div className="flex items-center space-x-2">
                 <AlertCircle className="h-6 w-6" />
-                <span className="text-sm font-medium">Adelantos</span>
+                <span className="text-sm font-medium">Anticipo Quincena</span>
               </div>
               <p className="text-2xl font-bold">${totalAdvances.toLocaleString()}</p>
             </div>
@@ -273,7 +273,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                     
                     {calc.deductions.advance > 0 && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-700">Adelantos (valor original)</span>
+                        <span className="text-gray-700">Anticipo Quincena (valor original)</span>
                         <span className="text-red-600 font-medium">-${calc.deductions.advance.toLocaleString()}</span>
                       </div>
                     )}
