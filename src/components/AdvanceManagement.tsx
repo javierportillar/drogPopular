@@ -212,6 +212,95 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
         </p>
       </div>
 
+      {/* Payslips Section */}
+      {showPayslips && advances.filter(a => a.month === selectedMonth).length > 0 && (
+        <div className="bg-white rounded-lg shadow-md border border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 bg-indigo-50">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-indigo-900">
+                Desprendibles de Anticipo Quincena - {formatMonthYear(selectedMonth)}
+              </h3>
+              <button
+                onClick={exportPayslipsTxt}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <Download className="h-4 w-4" />
+                <span>Exportar Desprendibles</span>
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {advances
+                .filter(advance => advance.month === selectedMonth)
+                .sort((a, b) => a.employeeName.localeCompare(b.employeeName))
+                .map((advance) => {
+                  const employee = employees.find(emp => emp.id === advance.employeeId);
+                  const netAmount = advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0);
+                  
+                  return (
+                    <div key={advance.id} className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center space-x-3 mb-4">
+                        <div className="bg-indigo-100 p-2 rounded-full">
+                          <User className="h-5 w-5 text-indigo-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-gray-900">{advance.employeeName}</h4>
+                          <p className="text-sm text-gray-500">C.C. {employee?.cedula}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Fecha:</span>
+                          <span className="font-medium">{new Date(advance.date).toLocaleDateString()}</span>
+                        </div>
+                        
+                        <div className="border-t border-indigo-200 pt-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Anticipo Quincena:</span>
+                            <span className="font-medium text-green-600">${advance.amount.toLocaleString()}</span>
+                          </div>
+                          
+                          {advance.employeeFund && advance.employeeFund > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Fondo Empleados:</span>
+                              <span className="font-medium text-red-600">-${advance.employeeFund.toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {advance.employeeLoan && advance.employeeLoan > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Cartera Empleados:</span>
+                              <span className="font-medium text-red-600">-${advance.employeeLoan.toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="border-t border-indigo-300 pt-3">
+                          <div className="flex justify-between items-center">
+                            <span className="font-semibold text-indigo-800">NETO A PAGAR:</span>
+                            <span className="font-bold text-indigo-700 text-lg">${netAmount.toLocaleString()}</span>
+                          </div>
+                        </div>
+                        
+                        {advance.description && (
+                          <div className="border-t border-indigo-200 pt-3">
+                            <p className="text-sm text-gray-600">
+                              <span className="font-medium">Descripción:</span> {advance.description}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Employees without advances */}
       {employeesWithoutAdvances.length > 0 && (
         <div className="bg-white rounded-lg shadow-md border border-gray-200">

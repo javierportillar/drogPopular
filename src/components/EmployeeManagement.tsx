@@ -71,7 +71,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
       salary: parseFloat(formData.salary),
       isPensioned: formData.isPensioned,
       workedDays: editingEmployee ? editingEmployee.workedDays : calculateWorkedDays(formData.createdDate),
-      createdDate: editingEmployee ? editingEmployee.createdDate : formData.createdDate,
+      createdDate: formData.createdDate,
     };
 
     if (editingEmployee) {

@@ -59,13 +59,13 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
         n.isRecurring && 
         n.startMonth && 
         n.startMonth <= selectedMonth &&
-        n.type === 'STUDY_LICENSE'
+        ['STUDY_LICENSE'].includes(n.type)
       );
       
       // Add recurring licenses that don't have a specific entry for this month
       recurringLicenses.forEach(license => {
         const existsForThisMonth = monthlyNovelties.some(n => 
-          n.type === 'STUDY_LICENSE' && 
+          n.type === license.type && 
           n.date.startsWith(selectedMonth)
         );
         

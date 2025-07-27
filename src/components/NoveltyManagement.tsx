@@ -187,7 +187,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     const typeInfo = getNoveltyTypeInfo(formData.type);
     const value = parseFloat(formData.value);
 
-    // Check if this is a recurring license
+    // Check if this is a recurring license (study license)
     const isRecurringLicense = formData.type === 'STUDY_LICENSE';
     const noveltyMonth = formData.date.slice(0, 7);
 
@@ -641,7 +641,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                               <Icon className="h-3 w-3 mr-1" />
                               {typeInfo.label}
                               {novelty.isRecurring && (
-                                <span className="ml-1 text-xs">🔄</span>
+                                <span className="ml-1 text-xs" title="Licencia recurrente">🔄</span>
                               )}
                             </span>
                           </td>
@@ -650,7 +650,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                               <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                               <span className="text-sm text-gray-900">{new Date(novelty.date).toLocaleDateString()}</span>
                               {novelty.isRecurring && (
-                                <span className="ml-2 text-xs text-indigo-600 font-medium">
+                                <span className="ml-2 text-xs text-indigo-600 font-medium" title="Licencia recurrente activa desde este mes">
                                   (Desde {novelty.startMonth})
                                 </span>
                               )}
