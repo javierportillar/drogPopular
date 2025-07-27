@@ -1,18 +1,28 @@
 import React from 'react';
 import { FileText, User, Calendar, DollarSign, AlertCircle, History, Download, TrendingUp } from 'lucide-react';
-import { PayrollCalculation } from '../types';
+import { PayrollCalculation, AdvancePayment } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
 
 interface PayrollPreviewProps {
   payrollCalculations: PayrollCalculation[];
-  advances: any[];
+  advances: AdvancePayment[];
+}
+
+interface HistoricalSummary {
+  month: string;
+  calculations: PayrollCalculation[];
+  totalNet: number;
+  totalDeductions: number;
+  totalBonuses: number;
+  totalTransport: number;
+  employeeCount: number;
 }
 
 export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations, advances }) => {
   const [showHistory, setShowHistory] = React.useState(false);
   const [startMonth, setStartMonth] = React.useState(new Date().toISOString().slice(0, 7));
   const [endMonth, setEndMonth] = React.useState(new Date().toISOString().slice(0, 7));
-  const [historicalData, setHistoricalData] = React.useState<any[]>([]);
+  const [historicalData, setHistoricalData] = React.useState<HistoricalSummary[]>([]);
 
   // Get all stored payroll calculations from localStorage
   const getAllStoredPayrolls = () => {
