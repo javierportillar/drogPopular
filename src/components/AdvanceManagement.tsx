@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, CreditCard, User, Calendar, DollarSign, Trash2, Edit, Save, X } from 'lucide-react';
+import { Plus, CreditCard, User, Calendar, DollarSign, Trash2, Edit, Save, X, FileText, Download } from 'lucide-react';
 import { Employee, AdvancePayment } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
 
@@ -29,6 +29,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
   const [editingEmployees, setEditingEmployees] = useState<Set<string>>(new Set());
   
   const [editingAdvance, setEditingAdvance] = useState<AdvancePayment | null>(null);
+  const [showPayslips, setShowPayslips] = useState(false);
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -170,6 +171,55 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
     }
   };
 
+  const exportPayslipsTxt = () => {
+    const monthFormatted = formatMonthYear(selectedMonth);
+
+    let txtContent = `DESPRENDIBLES ANTICIPO QUINCENA - ${monthFormatted}\n`;
+    txtContent += `Fecha de generación: ${new Date().toLocaleDateString()}\n`;
+    txtContent += `${'='.repeat(50)}\n\n`;
+
+    const advancesForMonth = advances
+      .filter(a => a.month === selectedMonth)
+      .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+
+    advancesForMonth.forEach((adv, index) => {
+      const employee = employees.find(emp => emp.id === adv.employeeId);
+      const net = adv.amount - (adv.employeeFund || 0) - (adv.employeeLoan || 0);
+
+      txtContent += `${index + 1}. ${adv.employeeName}\n`;
+      if (employee) txtContent += `   Cédula: ${employee.cedula}\n`;
+      txtContent += `   Fecha: ${adv.date}\n`;
+      txtContent += `   Anticipo Quincena: $${adv.amount.toLocaleString()}\n`;
+      if (adv.employeeFund) {
+        txtContent += `   Fondo Empleados: -$${adv.employeeFund.toLocaleString()}\n`;
+      }
+      if (adv.employeeLoan) {
+        txtContent += `   Cartera Empleados: -$${adv.employeeLoan.toLocaleString()}\n`;
+      }
+      txtContent += `   NETO A PAGAR: $${net.toLocaleString()}\n`;
+      if (adv.description) {
+        txtContent += `   Descripción: ${adv.description}\n`;
+      }
+      txtContent += `\n`;
+    });
+
+    const totalNet = advancesForMonth.reduce(
+      (sum, adv) => sum + adv.amount - (adv.employeeFund || 0) - (adv.employeeLoan || 0),
+      0
+    );
+
+    txtContent += `${'='.repeat(50)}\n`;
+    txtContent += `TOTAL NETO A PAGAR: $${totalNet.toLocaleString()}\n`;
+
+    const blob = new Blob([txtContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `desprendibles_anticipo_${selectedMonth}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const totalAdvances = advances
     .filter(advance => advance.month === selectedMonth)
     .reduce((sum, advance) => sum + advance.amount, 0);
@@ -190,6 +240,13 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
+          <button
+            onClick={() => setShowPayslips(!showPayslips)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            <span>{showPayslips ? 'Ocultar' : 'Ver'} Desprendibles</span>
+          </button>
           <button
             onClick={() => setIsFormOpen(true)}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
