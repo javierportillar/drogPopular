@@ -41,18 +41,10 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
       // Get all novelties for this employee
       const allEmployeeNovelties = novelties.filter(n => n.employeeId === employee.id);
       
-      // Get novelties that apply to the selected month
-      const monthlyNovelties = allEmployeeNovelties.filter(n => {
-        const noveltyMonth = n.date.slice(0, 7);
-        
-        // If it's a recurring license, check if it should apply to this month
-        if (n.isRecurring && n.startMonth) {
-          return n.startMonth <= selectedMonth;
-        }
-        
-        // For non-recurring novelties, only include if they're for this specific month
-        return noveltyMonth === selectedMonth;
-      });
+      // Get novelties that are explicitly registered for the selected month
+      const monthlyNovelties = allEmployeeNovelties.filter(n =>
+        n.date.slice(0, 7) === selectedMonth
+      );
       
       // For recurring licenses, create a virtual novelty for this month if it doesn't exist
       const recurringLicenses = allEmployeeNovelties.filter(n => 
