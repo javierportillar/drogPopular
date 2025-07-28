@@ -334,7 +334,7 @@ export const EmployeeManagement: React.FC<EmployeeManagementProps> = ({ employee
               </div>
               <div className="pt-2 border-t">
                 <p className="text-gray-600">Salario: <span className="font-semibold">${employee.salary.toLocaleString()}</span></p>
-                <p className="text-gray-600">Días trabajados totales: <span className="font-semibold">{employee.workedDays}</span></p>
+                <p className="text-gray-600">Fecha de ingreso: <span className="font-semibold">{employee.createdDate ? new Date(employee.createdDate).toLocaleDateString() : 'N/A'}</span></p>
                 {employee.isPensioned && (
                   <p className="text-blue-600 text-sm font-medium">✓ Empleado pensionado</p>
                 )}
