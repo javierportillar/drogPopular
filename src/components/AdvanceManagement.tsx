@@ -191,7 +191,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
       txtContent += `   Fecha: ${adv.date}\n`;
       txtContent += `   Anticipo Quincena: $${adv.amount.toLocaleString()}\n`;
       if (adv.employeeFund) {
-        txtContent += `   Fondo Empleados: -$${adv.employeeFund.toLocaleString()}\n`;
+        txtContent += `   Aporte Fondo Empleados: -$${adv.employeeFund.toLocaleString()}\n`;
       }
       if (adv.employeeLoan) {
         txtContent += `   Cartera Empleados: -$${adv.employeeLoan.toLocaleString()}\n`;
@@ -322,7 +322,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                           
                           {advance.employeeFund && advance.employeeFund > 0 && (
                             <div className="flex justify-between items-center">
-                              <span className="text-sm text-gray-600">Fondo Empleados:</span>
+                              <span className="text-sm text-gray-600">Aporte Fondo Empleados:</span>
                               <span className="font-medium text-red-600">-${advance.employeeFund.toLocaleString()}</span>
                             </div>
                           )}
