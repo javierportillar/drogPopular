@@ -1,11 +1,9 @@
 import React from 'react';
 import { FileText, User, Calendar, DollarSign, AlertCircle, History, Download, TrendingUp } from 'lucide-react';
-import { PayrollCalculation, AdvancePayment } from '../types';
+import { PayrollCalculation } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
 
 interface PayrollPreviewProps {
-  payrollCalculations: PayrollCalculation[];
-  advances: AdvancePayment[];
   monthlyPayrolls: Record<string, PayrollCalculation[]>;
 }
 
@@ -19,12 +17,21 @@ interface HistoricalSummary {
   employeeCount: number;
 }
 
-export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations, advances, monthlyPayrolls }) => {
+export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ monthlyPayrolls }) => {
   const [showHistory, setShowHistory] = React.useState(false);
   const [showPayslips, setShowPayslips] = React.useState(false);
   const [startMonth, setStartMonth] = React.useState(new Date().toISOString().slice(0, 7));
   const [endMonth, setEndMonth] = React.useState(new Date().toISOString().slice(0, 7));
+  const availableMonths = React.useMemo(() => Object.keys(monthlyPayrolls).sort(), [monthlyPayrolls]);
+  const defaultMonth = availableMonths.length > 0 ? availableMonths[availableMonths.length - 1] : new Date().toISOString().slice(0, 7);
+  const [selectedMonth, setSelectedMonth] = React.useState(defaultMonth);
   const [historicalData, setHistoricalData] = React.useState<HistoricalSummary[]>([]);
+
+  React.useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.includes(selectedMonth)) {
+      setSelectedMonth(availableMonths[availableMonths.length - 1]);
+    }
+  }, [availableMonths, selectedMonth]);
 
   const generateHistoricalReport = () => {
     const startDate = new Date(startMonth + '-01');
@@ -104,11 +111,12 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
     URL.revokeObjectURL(url);
   };
 
-  const totalPayroll = payrollCalculations.reduce((sum, calc) => sum + calc.netSalary, 0);
-  const totalDeductions = payrollCalculations.reduce((sum, calc) => sum + calc.deductions.total, 0);
-  const totalTransportAllowance = payrollCalculations.reduce((sum, calc) => sum + calc.transportAllowance, 0);
-  const totalAdvances = advances ? advances.reduce((sum, adv) => sum + adv.amount, 0) : payrollCalculations.reduce((sum, calc) => sum + calc.deductions.advance, 0);
-  const totalBonuses = payrollCalculations.reduce((sum, calc) => sum + (calc.bonusCalculations?.total || calc.bonuses || 0), 0);
+  const currentCalculations = monthlyPayrolls[selectedMonth] || [];
+  const totalPayroll = currentCalculations.reduce((sum, calc) => sum + calc.netSalary, 0);
+  const totalDeductions = currentCalculations.reduce((sum, calc) => sum + calc.deductions.total, 0);
+  const totalTransportAllowance = currentCalculations.reduce((sum, calc) => sum + calc.transportAllowance, 0);
+  const totalAdvances = currentCalculations.reduce((sum, calc) => sum + calc.deductions.advance, 0);
+  const totalBonuses = currentCalculations.reduce((sum, calc) => sum + (calc.bonusCalculations?.total || calc.bonuses || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -135,6 +143,23 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
           </div>
         </div>
       </div>
+
+      {availableMonths.length > 0 && (
+        <div className="flex justify-end">
+          <label className="mr-2 text-sm font-medium text-gray-700">Mes:</label>
+          <select
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg"
+          >
+            {availableMonths.map(month => (
+              <option key={month} value={month}>
+                {formatMonthYear(month)}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {/* Historical Report Section */}
       {showHistory && (
@@ -245,7 +270,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
         </div>
       )}
 
-      {payrollCalculations.length > 0 ? (
+      {currentCalculations.length > 0 ? (
         <>
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
@@ -262,7 +287,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                 <User className="h-6 w-6" />
                 <span className="text-sm font-medium">Empleados</span>
               </div>
-              <p className="text-2xl font-bold">{payrollCalculations.length}</p>
+              <p className="text-2xl font-bold">{currentCalculations.length}</p>
             </div>
             
             <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-lg">
@@ -307,7 +332,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
         {/* Detailed Employee Cards - New Layout */}
         {showPayslips && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {payrollCalculations.map((calc) => (
+            {currentCalculations.map((calc) => (
               <div key={calc.employee.id} className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
                 <div className="flex items-center space-x-3 mb-4">
                   <div className="bg-blue-100 p-2 rounded-full">
