@@ -20,6 +20,7 @@ interface HistoricalSummary {
 
 export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations, advances }) => {
   const [showHistory, setShowHistory] = React.useState(false);
+  const [showPayslips, setShowPayslips] = React.useState(false);
   const [startMonth, setStartMonth] = React.useState(new Date().toISOString().slice(0, 7));
   const [endMonth, setEndMonth] = React.useState(new Date().toISOString().slice(0, 7));
   const [historicalData, setHistoricalData] = React.useState<HistoricalSummary[]>([]);
@@ -136,6 +137,13 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
           >
             <History className="h-4 w-4" />
             <span>{showHistory ? 'Ocultar' : 'Ver'} Histórico</span>
+          </button>
+          <button
+            onClick={() => setShowPayslips(!showPayslips)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            <span>{showPayslips ? 'Ocultar' : 'Ver'} Desprendibles</span>
           </button>
           <div className="flex items-center space-x-2 text-sm text-gray-500">
             <Calendar className="h-4 w-4" />
@@ -303,10 +311,17 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                 <span className="text-sm font-medium">Bonificaciones</span>
               </div>
               <p className="text-2xl font-bold">${totalBonuses.toLocaleString()}</p>
-            </div>
           </div>
+        </div>
 
-          {/* Detailed Employee Cards - New Layout */}
+        {!showPayslips && (
+          <div className="text-center text-sm text-gray-500 my-4">
+            Haz clic en "Ver Desprendibles" para mostrar los detalles.
+          </div>
+        )}
+
+        {/* Detailed Employee Cards - New Layout */}
+        {showPayslips && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {payrollCalculations.map((calc) => (
               <div key={calc.employee.id} className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
@@ -535,6 +550,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
               </div>
             ))}
           </div>
+          )}
         </>
       ) : (
         <div className="text-center py-12 bg-white rounded-lg shadow-md border border-gray-200">
