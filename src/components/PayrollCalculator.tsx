@@ -14,6 +14,8 @@ interface PayrollCalculatorProps {
   deductionRates: DeductionRates;
   setPayrollCalculations: (calculations: PayrollCalculation[]) => void;
   payrollCalculations: PayrollCalculation[];
+  monthlyPayrolls: Record<string, PayrollCalculation[]>;
+  setMonthlyPayrolls: (history: Record<string, PayrollCalculation[]>) => void;
 }
 
 export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({ 
@@ -22,12 +24,19 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   advances,
   deductionRates,
   setPayrollCalculations,
-  payrollCalculations 
+  payrollCalculations,
+  monthlyPayrolls,
+  setMonthlyPayrolls
 }) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [isCalculating, setIsCalculating] = useState(false);
   const [tableZoom, setTableZoom] = useState(100);
+
+  React.useEffect(() => {
+    const stored = monthlyPayrolls[selectedMonth] || [];
+    setPayrollCalculations(stored);
+  }, [selectedMonth, monthlyPayrolls, setPayrollCalculations]);
 
   const calculatePayroll = () => {
     setIsCalculating(true);
@@ -208,6 +217,7 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     });
     
     setPayrollCalculations(calculations);
+    setMonthlyPayrolls(prev => ({ ...prev, [selectedMonth]: calculations }));
     setIsCalculating(false);
   };
 
