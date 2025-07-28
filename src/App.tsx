@@ -164,8 +164,6 @@ function App() {
       case 'preview':
         return (
           <PayrollPreview
-            payrollCalculations={payrollCalculations}
-            advances={advances}
             monthlyPayrolls={monthlyPayrolls}
           />
         );
