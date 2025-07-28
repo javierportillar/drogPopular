@@ -111,6 +111,10 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
   // Build novelties list for the selected month, including recurring licenses
   const displayedNovelties: Novelty[] = novelties.reduce((acc: Novelty[], n) => {
     const noveltyMonth = n.date.slice(0, 7);
+    const employee = employees.find(emp => emp.id === n.employeeId);
+    if (employee && employee.createdDate && employee.createdDate.slice(0, 7) > selectedMonth) {
+      return acc; // ignore novelties before employee's start date
+    }
 
     if (n.isRecurring && n.startMonth && n.startMonth <= selectedMonth) {
       const existsForThisMonth = novelties.some(other =>
@@ -135,13 +139,17 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
     return acc;
   }, [] as Novelty[]);
 
+  const employeesForMonth = employees.filter(emp =>
+    !emp.createdDate || emp.createdDate.slice(0, 7) <= selectedMonth
+  );
+
   const employeesWithNovelties = Array.from(new Set(displayedNovelties.map(n => n.employeeId)));
 
-  const employeesWithoutNovelties = employees
+  const employeesWithoutNovelties = employeesForMonth
     .filter(emp => !employeesWithNovelties.includes(emp.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  const employeesWithNoveltiesData = employees
+  const employeesWithNoveltiesData = employeesForMonth
     .filter(emp => employeesWithNovelties.includes(emp.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -705,7 +713,7 @@ export const NoveltyManagement: React.FC<NoveltyManagementProps> = ({
                   required
                 >
                   <option value="">Seleccionar empleado</option>
-                  {employees.map((employee) => (
+                  {employeesForMonth.map((employee) => (
                     <option key={employee.id} value={employee.id}>
                       {employee.name}
                     </option>

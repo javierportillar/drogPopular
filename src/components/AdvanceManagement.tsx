@@ -42,15 +42,19 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
   });
 
   // Get employees with and without advances for selected month
+  const employeesForMonth = employees.filter(emp =>
+    !emp.createdDate || emp.createdDate.slice(0, 7) <= selectedMonth
+  );
+
   const employeesWithAdvances = advances
     .filter(advance => advance.month === selectedMonth)
     .map(advance => advance.employeeId);
-  
-  const employeesWithoutAdvances = employees
+
+  const employeesWithoutAdvances = employeesForMonth
     .filter(emp => !employeesWithAdvances.includes(emp.id))
     .sort((a, b) => a.name.localeCompare(b.name));
-  
-  const employeesWithAdvancesData = employees
+
+  const employeesWithAdvancesData = employeesForMonth
     .filter(emp => employeesWithAdvances.includes(emp.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -179,7 +183,9 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
     txtContent += `${'='.repeat(50)}\n\n`;
 
     const advancesForMonth = advances
-      .filter(a => a.month === selectedMonth)
+      .filter(a => a.month === selectedMonth &&
+        (!employees.find(emp => emp.id === a.employeeId)?.createdDate ||
+         employees.find(emp => emp.id === a.employeeId)!.createdDate!.slice(0,7) <= selectedMonth))
       .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
 
     advancesForMonth.forEach((adv, index) => {
@@ -226,7 +232,11 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
   };
 
   const totalAdvances = advances
-    .filter(advance => advance.month === selectedMonth)
+    .filter(advance =>
+      advance.month === selectedMonth &&
+      (!employees.find(emp => emp.id === advance.employeeId)?.createdDate ||
+       employees.find(emp => emp.id === advance.employeeId)!.createdDate!.slice(0, 7) <= selectedMonth)
+    )
     .reduce((sum, advance) => sum + advance.amount, 0);
 
   return (
@@ -275,7 +285,12 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
       </div>
 
       {/* Payslips Section */}
-      {showPayslips && advances.filter(a => a.month === selectedMonth).length > 0 && (
+      {showPayslips &&
+        advances.filter(a =>
+          a.month === selectedMonth &&
+          (!employees.find(emp => emp.id === a.employeeId)?.createdDate ||
+           employees.find(emp => emp.id === a.employeeId)!.createdDate!.slice(0, 7) <= selectedMonth)
+        ).length > 0 && (
         <div className="bg-white rounded-lg shadow-md border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200 bg-indigo-50">
             <div className="flex justify-between items-center">
@@ -295,7 +310,11 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {advances
-                .filter(advance => advance.month === selectedMonth)
+                .filter(advance =>
+                  advance.month === selectedMonth &&
+                  (!employees.find(emp => emp.id === advance.employeeId)?.createdDate ||
+                   employees.find(emp => emp.id === advance.employeeId)!.createdDate!.slice(0, 7) <= selectedMonth)
+                )
                 .sort((a, b) => a.employeeName.localeCompare(b.employeeName))
                 .map((advance) => {
                   const employee = employees.find(emp => emp.id === advance.employeeId);
@@ -533,7 +552,11 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {advances
-                  .filter(advance => advance.month === selectedMonth)
+                  .filter(advance =>
+                    advance.month === selectedMonth &&
+                    (!employees.find(emp => emp.id === advance.employeeId)?.createdDate ||
+                     employees.find(emp => emp.id === advance.employeeId)!.createdDate!.slice(0, 7) <= selectedMonth)
+                  )
                   .sort((a, b) => a.employeeName.localeCompare(b.employeeName))
                   .map((advance) => (
                     <tr key={advance.id} className="bg-green-25 hover:bg-green-50">
@@ -626,7 +649,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                   required
                 >
                   <option value="">Seleccionar empleado</option>
-                  {employees.map((employee) => (
+                  {employeesForMonth.map((employee) => (
                     <option key={employee.id} value={employee.id}>
                       {employee.name}
                     </option>
