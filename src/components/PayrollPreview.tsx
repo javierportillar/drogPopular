@@ -322,7 +322,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                 
                 {/* Devengar Section */}
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                  <h4 className="font-semibold text-green-800 mb-3 text-center">DEVENGAR</h4>
+                  <h4 className="font-semibold text-green-800 mb-3 text-center">DEVENGADO</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-gray-700">Días trabajados al mes</span>
@@ -334,12 +334,14 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700">Salario Base</span>
-                      <span className="font-medium">${calc.baseSalary.toLocaleString()}</span>
+                      <span className="text-sm text-gray-700">Base Salarial</span>
+                      <span className="font-medium text-blue-700">${calc.baseSalary.toLocaleString()}</span>
                     </div>
+                    <div className="border-t border-green-300 pt-2 mt-2">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-700">Salario Bruto</span>
+                      <span className="text-sm text-gray-700">Salario Mes</span>
                       <span className="font-medium">${calc.grossSalary.toLocaleString()}</span>
+                    </div>
                     </div>
                     
                     {calc.transportAllowance > 0 && (
@@ -351,7 +353,7 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculati
                     
                     {/* Novedades Adicionadas */}
                     {calc.novelties.filter(n => 
-                      ['FIXED_COMPENSATION', 'SALES_BONUS', 'FIXED_OVERTIME', 'UNEXPECTED_OVERTIME', 'NIGHT_SURCHARGE', 'SUNDAY_WORK', 'GAS_ALLOWANCE'].includes(n.type)
+                      ['FIXED_COMPENSATION', 'SALES_BONUS', 'FIXED_OVERTIME', 'UNEXPECTED_OVERTIME', 'NIGHT_SURCHARGE', 'SUNDAY_WORK', 'GAS_ALLOWANCE','STUDY_LICENSE'].includes(n.type)
                     ).length > 0 && (
                       <div className="border-t border-green-300 pt-2 mt-2">
                         <h5 className="text-sm font-medium text-green-800 mb-2">Novedades Adicionadas:</h5>
