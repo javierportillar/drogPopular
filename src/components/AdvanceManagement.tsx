@@ -500,10 +500,13 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                     Aporte Fondo Emp.
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Cartera Emp.
+                    Neto a Pagar
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Neto a Pagar
+                    Total Deducibles
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Cartera Emp.
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha
@@ -541,13 +544,16 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {advance.employeeFund ? `$${advance.employeeFund.toLocaleString()}` : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {advance.employeeLoan ? `$${advance.employeeLoan.toLocaleString()}` : '-'}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-700">
                         ${(
                           advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0)
                         ).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${((advance.employeeFund || 0) + (advance.employeeLoan || 0)).toLocaleString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {advance.employeeLoan ? `$${advance.employeeLoan.toLocaleString()}` : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
