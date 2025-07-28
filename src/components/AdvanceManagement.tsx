@@ -184,6 +184,8 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
 
     advancesForMonth.forEach((adv, index) => {
       const employee = employees.find(emp => emp.id === adv.employeeId);
+      const totalDeductions = (adv.employeeFund || 0) + (adv.employeeLoan || 0);
+
       const net = adv.amount - (adv.employeeFund || 0) - (adv.employeeLoan || 0);
 
       txtContent += `${index + 1}. ${adv.employeeName}\n`;
@@ -195,6 +197,9 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
       }
       if (adv.employeeLoan) {
         txtContent += `   Cartera Empleados: -$${adv.employeeLoan.toLocaleString()}\n`;
+      }
+      if (totalDeductions > 0) {
+        txtContent += `   TOTAL DEDUCCIONES: $${totalDeductions.toLocaleString()}\n`;
       }
       txtContent += `   NETO A PAGAR: $${net.toLocaleString()}\n`;
       if (adv.description) {
@@ -295,7 +300,8 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                 .map((advance) => {
                   const employee = employees.find(emp => emp.id === advance.employeeId);
                   const netAmount = advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0);
-                  
+                  const totalDeductions = (advance.employeeFund || 0) + (advance.employeeLoan || 0);
+
                   return (
                     <div key={advance.id} className="bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6 shadow-sm">
                       <div className="flex items-center space-x-3 mb-4">
@@ -331,6 +337,12 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                             <div className="flex justify-between items-center">
                               <span className="text-sm text-gray-600">Cartera Empleados:</span>
                               <span className="font-medium text-red-600">-${advance.employeeLoan.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {totalDeductions > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">Total Deducciones:</span>
+                              <span className="font-medium text-black-600">${totalDeductions.toLocaleString()}</span>
                             </div>
                           )}
                         </div>
@@ -500,12 +512,13 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                     Aporte Fondo Emp.
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Neto a Pagar
+                    Cartera Emp.
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Total Deducibles
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Neto a Pagar
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fecha
@@ -543,11 +556,8 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {advance.employeeFund ? `$${advance.employeeFund.toLocaleString()}` : '-'}
                       </td>
-
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-700">
-                        ${(
-                          advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0)
-                        ).toLocaleString()}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {advance.employeeLoan ? `$${advance.employeeLoan.toLocaleString()}` : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {(
@@ -556,8 +566,10 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                           ? `$${((advance.employeeFund || 0) + (advance.employeeLoan || 0)).toLocaleString()}`
                           : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {advance.employeeLoan ? `$${advance.employeeLoan.toLocaleString()}` : '-'}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-purple-700">
+                        ${(
+                          advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0)
+                        ).toLocaleString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
