@@ -74,6 +74,22 @@ function App() {
       }))
     );
   }, [setEmployees]);
+
+  // Ensure existing study licenses remain recurring
+  React.useEffect(() => {
+    setNovelties(prev =>
+      prev.map(n =>
+        n.type === 'STUDY_LICENSE'
+          ? {
+              ...n,
+              isRecurring: n.isRecurring ?? true,
+              startMonth: n.startMonth ?? n.date.slice(0, 7)
+            }
+          : n
+      )
+    );
+  }, [setNovelties]);
+
   /* -----------------------------------------------------------------------
      Actualiza workedDays cada hora (UTC-5) sin sobrescribir en caliente
   ----------------------------------------------------------------------- */
