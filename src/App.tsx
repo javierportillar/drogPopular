@@ -63,6 +63,7 @@ function App() {
   const [novelties, setNovelties]               = useLocalStorage<Novelty[]>           ('novelties',         []);
   const [advances, setAdvances]                 = useLocalStorage<AdvancePayment[]>    ('advances',          []);
   const [payrollCalculations, setPayroll]       = useLocalStorage<PayrollCalculation[]>('payrollCalculations', []);
+  const [monthlyPayrolls, setMonthlyPayrolls]   = useLocalStorage<Record<string, PayrollCalculation[]>>('monthlyPayrolls', {});
   const [deductionRates, setDeductionRates]     = useLocalStorage<DeductionRates>      ('deductionRates',    DEFAULT_DEDUCTION_RATES);
 
   // Migration function to add isPensioned field to existing employees
@@ -156,10 +157,18 @@ function App() {
             deductionRates={deductionRates}
             payrollCalculations={payrollCalculations}
             setPayrollCalculations={setPayroll}
+            monthlyPayrolls={monthlyPayrolls}
+            setMonthlyPayrolls={setMonthlyPayrolls}
           />
         );
       case 'preview':
-        return <PayrollPreview payrollCalculations={payrollCalculations} advances={advances} />;
+        return (
+          <PayrollPreview
+            payrollCalculations={payrollCalculations}
+            advances={advances}
+            monthlyPayrolls={monthlyPayrolls}
+          />
+        );
       case 'settings':
         return (
           <SettingsManagement

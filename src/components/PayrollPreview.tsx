@@ -6,6 +6,7 @@ import { formatMonthYear } from '../utils/dateUtils';
 interface PayrollPreviewProps {
   payrollCalculations: PayrollCalculation[];
   advances: AdvancePayment[];
+  monthlyPayrolls: Record<string, PayrollCalculation[]>;
 }
 
 interface HistoricalSummary {
@@ -18,41 +19,24 @@ interface HistoricalSummary {
   employeeCount: number;
 }
 
-export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations, advances }) => {
+export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ payrollCalculations, advances, monthlyPayrolls }) => {
   const [showHistory, setShowHistory] = React.useState(false);
   const [showPayslips, setShowPayslips] = React.useState(false);
   const [startMonth, setStartMonth] = React.useState(new Date().toISOString().slice(0, 7));
   const [endMonth, setEndMonth] = React.useState(new Date().toISOString().slice(0, 7));
   const [historicalData, setHistoricalData] = React.useState<HistoricalSummary[]>([]);
 
-  // Get all stored payroll calculations from localStorage
-  const getAllStoredPayrolls = () => {
-    try {
-      const stored = localStorage.getItem('payrollCalculations');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  };
-
   const generateHistoricalReport = () => {
-    const allPayrolls = getAllStoredPayrolls();
     const startDate = new Date(startMonth + '-01');
     const endDate = new Date(endMonth + '-01');
-    
+
     // Group payrolls by month and filter by date range
     const monthlyData: { [key: string]: PayrollCalculation[] } = {};
-    
-    allPayrolls.forEach((calc: PayrollCalculation) => {
-      // Try to determine the month from the calculation date or use current month as fallback
-      const calcMonth = calc.employee.createdDate?.slice(0, 7) || new Date().toISOString().slice(0, 7);
-      const calcDate = new Date(calcMonth + '-01');
-      
-      if (calcDate >= startDate && calcDate <= endDate) {
-        if (!monthlyData[calcMonth]) {
-          monthlyData[calcMonth] = [];
-        }
-        monthlyData[calcMonth].push(calc);
+
+    Object.entries(monthlyPayrolls).forEach(([month, calculations]) => {
+      const monthDate = new Date(month + '-01');
+      if (monthDate >= startDate && monthDate <= endDate) {
+        monthlyData[month] = calculations;
       }
     });
     
