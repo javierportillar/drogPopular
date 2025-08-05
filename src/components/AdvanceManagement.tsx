@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { Plus, CreditCard, User, Calendar, DollarSign, Trash2, Edit, Save, X, FileText, Download } from 'lucide-react';
+import { Plus, CreditCard, User, Calendar, DollarSign, Trash2, Edit, Save, X, FileText, Download, FileDown } from 'lucide-react';
 import { Employee, AdvancePayment } from '../types';
 import { formatMonthYear } from '../utils/dateUtils';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface AdvanceManagementProps {
   employees: Employee[];
@@ -30,6 +32,7 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
   
   const [editingAdvance, setEditingAdvance] = useState<AdvancePayment | null>(null);
   const [showPayslips, setShowPayslips] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const [formData, setFormData] = useState({
     employeeId: '',
@@ -231,6 +234,115 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const exportPayslipsPDF = async () => {
+    setIsGeneratingPDF(true);
+    const monthFormatted = formatMonthYear(selectedMonth);
+    
+    const advancesForMonth = advances
+      .filter(a => a.month === selectedMonth &&
+        (!employees.find(emp => emp.id === a.employeeId)?.createdDate ||
+         employees.find(emp => emp.id === a.employeeId)!.createdDate!.slice(0,7) <= selectedMonth))
+      .sort((a, b) => a.employeeName.localeCompare(b.employeeName));
+
+    if (advancesForMonth.length === 0) {
+      setIsGeneratingPDF(false);
+      return;
+    }
+
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 20;
+    
+    for (let i = 0; i < advancesForMonth.length; i++) {
+      const advance = advancesForMonth[i];
+      const employee = employees.find(emp => emp.id === advance.employeeId);
+      const netAmount = advance.amount - (advance.employeeFund || 0) - (advance.employeeLoan || 0);
+      const totalDeductions = (advance.employeeFund || 0) + (advance.employeeLoan || 0);
+      
+      if (i > 0) {
+        pdf.addPage();
+      }
+      
+      // Header
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DESPRENDIBLE ANTICIPO QUINCENA', pageWidth / 2, margin, { align: 'center' });
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`${monthFormatted}`, pageWidth / 2, margin + 8, { align: 'center' });
+      
+      // Employee info
+      let yPos = margin + 25;
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`Empleado: ${advance.employeeName}`, margin, yPos);
+      
+      yPos += 8;
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      if (employee) {
+        pdf.text(`Cédula: ${employee.cedula}`, margin, yPos);
+      }
+      
+      yPos += 8;
+      pdf.text(`Fecha: ${new Date(advance.date).toLocaleDateString()}`, margin, yPos);
+      
+      // Payment details
+      yPos += 20;
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('DETALLE DEL ANTICIPO', margin, yPos);
+      
+      yPos += 15;
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Anticipo Quincena:`, margin, yPos);
+      pdf.text(`$${advance.amount.toLocaleString()}`, pageWidth - margin - 30, yPos, { align: 'right' });
+      
+      if (advance.employeeFund && advance.employeeFund > 0) {
+        yPos += 8;
+        pdf.text(`Aporte Fondo Empleados:`, margin, yPos);
+        pdf.text(`-$${advance.employeeFund.toLocaleString()}`, pageWidth - margin - 30, yPos, { align: 'right' });
+      }
+      
+      if (advance.employeeLoan && advance.employeeLoan > 0) {
+        yPos += 8;
+        pdf.text(`Cartera Empleados:`, margin, yPos);
+        pdf.text(`-$${advance.employeeLoan.toLocaleString()}`, pageWidth - margin - 30, yPos, { align: 'right' });
+      }
+      
+      if (totalDeductions > 0) {
+        yPos += 12;
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`TOTAL DEDUCCIONES:`, margin, yPos);
+        pdf.text(`$${totalDeductions.toLocaleString()}`, pageWidth - margin - 30, yPos, { align: 'right' });
+      }
+      
+      // Net amount
+      yPos += 20;
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`NETO A PAGAR:`, margin, yPos);
+      pdf.text(`$${netAmount.toLocaleString()}`, pageWidth - margin - 30, yPos, { align: 'right' });
+      
+      if (advance.description) {
+        yPos += 20;
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Descripción: ${advance.description}`, margin, yPos);
+      }
+      
+      // Footer
+      pdf.setFontSize(8);
+      pdf.setFont('helvetica', 'italic');
+      pdf.text(`Generado el ${new Date().toLocaleDateString()} - Droguerías Popular`, 
+        pageWidth / 2, pageHeight - 10, { align: 'center' });
+    }
+    
+    pdf.save(`desprendibles_anticipo_${selectedMonth}.pdf`);
+    setIsGeneratingPDF(false);
+  };
   const totalAdvances = advances
     .filter(advance =>
       advance.month === selectedMonth &&
@@ -304,6 +416,14 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                 <Download className="h-4 w-4" />
                 <span>Exportar Desprendibles</span>
               </button>
+              <button
+                onClick={exportPayslipsPDF}
+                disabled={isGeneratingPDF}
+                className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <FileDown className="h-4 w-4" />
+                <span>{isGeneratingPDF ? 'Generando...' : 'Descargar PDF'}</span>
+              </button>
             </div>
           </div>
           
@@ -375,9 +495,11 @@ export const AdvanceManagement: React.FC<AdvanceManagementProps> = ({
                         
                         {advance.description && (
                           <div className="border-t border-indigo-200 pt-3">
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Descripción:</span> {advance.description}
-                            </p>
+                            {advance.description.trim() && (
+                              <p className="text-sm text-gray-600">
+                                <span className="font-medium">Descripción:</span> {advance.description}
+                              </p>
+                            )}
                           </div>
                         )}
                       </div>

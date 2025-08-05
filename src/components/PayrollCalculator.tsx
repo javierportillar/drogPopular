@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Calculator, Download, AlertCircle, TrendingUp, CreditCard, ZoomIn, ZoomOut } from 'lucide-react';
+import { Calculator, Download, AlertCircle, TrendingUp, CreditCard, ZoomIn, ZoomOut, FileSpreadsheet } from 'lucide-react';
 import { Employee, Novelty, PayrollCalculation, AdvancePayment, DeductionRates, MINIMUM_SALARY_COLOMBIA } from '../types';
 import { getDaysInMonth, formatMonthYear, parseMonthString, isEmployeeActiveInMonth } from '../utils/dateUtils';
 import { roundToNearest500Or1000 } from '../utils/financeUtils';
+import * as XLSX from 'xlsx';
 
 const PAYROLL_DAYS = 30;
 
@@ -415,6 +416,126 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     URL.revokeObjectURL(url);
   };
 
+  const exportToExcel = () => {
+    const monthFormatted = formatMonthYear(selectedMonth);
+    const { year, month } = parseMonthString(selectedMonth);
+    const daysInMonth = getDaysInMonth(year, month);
+    
+    // Prepare data for Excel
+    const excelData = payrollCalculations.map((calc, index) => {
+      const employeeAdvances = advances.filter(a => a.employeeId === calc.employee.id && a.month === selectedMonth);
+      const totalAdvanceAmount = employeeAdvances.reduce((sum, adv) => sum + adv.amount, 0);
+      
+      return {
+        'No.': index + 1,
+        'Empleado': calc.employee.name,
+        'Cédula': calc.employee.cedula,
+        'Contrato': calc.employee.contractType,
+        'Salario Base': calc.baseSalary ?? 0,
+        'Días Trabajados': `${calc.workedDays}/${calc.totalDaysInMonth}`,
+        'Días Descontados': calc.discountedDays,
+        'Salario Bruto': calc.grossSalary ?? 0,
+        'Aux. Transporte': calc.transportAllowance ?? 0,
+        'Compensatorios Fijos': calc.bonusCalculations?.fixedCompensation || 0,
+        'Bonif. en Venta': calc.bonusCalculations?.salesBonus || 0,
+        'Horas Extra Fijas': calc.bonusCalculations?.fixedOvertime || 0,
+        'Horas Extra NE': calc.bonusCalculations?.unexpectedOvertime || 0,
+        'Recargos Nocturnos': calc.bonusCalculations?.nightSurcharge || 0,
+        'Festivos': calc.bonusCalculations?.sundayWork || 0,
+        'Aux. Gasolina': calc.bonusCalculations?.gasAllowance || 0,
+        'Lic. Estudio': calc.bonusCalculations?.studyLicense || 0,
+        'Total Adiciones': calc.bonusCalculations?.total || 0,
+        'Total Devengado': calc.totalEarned ?? 0,
+        'Salud': calc.deductions?.health ?? 0,
+        'Pensión': calc.deductions?.pension ?? 0,
+        'Solidaridad': calc.deductions?.solidarity ?? 0,
+        'Ausencias': calc.deductions?.absence ?? 0,
+        'Plan Corporativo': calc.deductions?.planCorporativo ?? 0,
+        'Recordar': calc.deductions?.recordar ?? 0,
+        'Inventarios y Cruces': calc.deductions?.inventariosCruces ?? 0,
+        'Multas': calc.deductions?.multas ?? 0,
+        'Fondo Empleados': calc.deductions?.fondoEmpleados ?? 0,
+        'Cartera Empleados': calc.deductions?.carteraEmpleados ?? 0,
+        'Anticipo Quincena': calc.deductions?.advance ?? 0,
+        'Total Deducciones': calc.deductions?.total ?? 0,
+        'SALARIO NETO': calc.netSalary ?? 0,
+      };
+    });
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    
+    // Create main worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+    
+    // Set column widths
+    const colWidths = [
+      { wch: 5 },   // No.
+      { wch: 25 },  // Empleado
+      { wch: 15 },  // Cédula
+      { wch: 10 },  // Contrato
+      { wch: 15 },  // Salario Base
+      { wch: 15 },  // Días Trabajados
+      { wch: 12 },  // Días Descontados
+      { wch: 15 },  // Salario Bruto
+      { wch: 12 },  // Aux. Transporte
+      { wch: 15 },  // Compensatorios
+      { wch: 15 },  // Bonif. Venta
+      { wch: 15 },  // H. Extra Fijas
+      { wch: 15 },  // H. Extra NE
+      { wch: 15 },  // Recargos Noc.
+      { wch: 12 },  // Festivos
+      { wch: 12 },  // Aux. Gasolina
+      { wch: 12 },  // Lic. Estudio
+      { wch: 15 },  // Total Adiciones
+      { wch: 15 },  // Total Devengado
+      { wch: 12 },  // Salud
+      { wch: 12 },  // Pensión
+      { wch: 12 },  // Solidaridad
+      { wch: 12 },  // Ausencias
+      { wch: 15 },  // Plan Corp.
+      { wch: 12 },  // Recordar
+      { wch: 15 },  // Inventarios
+      { wch: 12 },  // Multas
+      { wch: 15 },  // Fondo Emp.
+      { wch: 15 },  // Cartera Emp.
+      { wch: 15 },  // Anticipo
+      { wch: 15 },  // Total Ded.
+      { wch: 15 },  // Salario Neto
+    ];
+    ws['!cols'] = colWidths;
+    
+    // Add summary data
+    const summaryData = [
+      ['RESUMEN DE NÓMINA', ''],
+      [`Mes: ${monthFormatted}`, ''],
+      [`Fecha de procesamiento: ${new Date(selectedDate).toLocaleDateString()}`, ''],
+      [`Días del mes: ${daysInMonth}`, ''],
+      ['', ''],
+      ['CONFIGURACIÓN DE DEDUCCIONES', ''],
+      [`Salud: ${deductionRates.health}%`, ''],
+      [`Pensión: ${deductionRates.pension}%`, ''],
+      [`Solidaridad: ${deductionRates.solidarity}%`, ''],
+      [`Auxilio de Transporte: $${deductionRates.transportAllowance.toLocaleString()}`, ''],
+      ['', ''],
+      ['TOTALES', ''],
+      [`Total Empleados: ${payrollCalculations.length}`, ''],
+      [`Total Salarios Brutos: $${payrollCalculations.reduce((sum, calc) => sum + (calc.grossSalary ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Deducciones: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.total ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Anticipo Quincena: $${totalAdvancesMonth.toLocaleString()}`, ''],
+      [`TOTAL NÓMINA NETA: $${totalPayroll.toLocaleString()}`, ''],
+    ];
+    
+    const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+    summaryWs['!cols'] = [{ wch: 40 }, { wch: 20 }];
+    
+    // Add worksheets to workbook
+    XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen');
+    XLSX.utils.book_append_sheet(wb, ws, 'Nómina Detallada');
+    
+    // Save file
+    XLSX.writeFile(wb, `nomina_${selectedMonth}.xlsx`);
+  };
   const totalPayroll = payrollCalculations.reduce((sum, calc) => sum + (calc.netSalary ?? 0), 0);
   const totalAdvancesMonth = advances
     .filter(a => a.month === selectedMonth)
@@ -494,6 +615,13 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
               >
                 <Download className="h-4 w-4" />
                 <span>Exportar TXT</span>
+              </button>
+              <button
+                onClick={exportToExcel}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                <span>Exportar Excel</span>
               </button>
             </div>
           </div>
