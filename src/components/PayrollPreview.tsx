@@ -466,8 +466,88 @@ export const PayrollPreview: React.FC<PayrollPreviewProps> = ({ monthlyPayrolls 
                       
                       <div className="border-t border-indigo-200 pt-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Deducciones:</span>
-                          <span className="font-medium text-red-600">${(calc.deductions?.total ?? 0).toLocaleString()}</span>
+                          <span className="font-semibold text-indigo-800">DEDUCCIONES:</span>
+                          <span className="font-bold text-red-600">${(calc.deductions?.total ?? 0).toLocaleString()}</span>
+                        </div>
+                        
+                        {/* Detalles de deducciones */}
+                        <div className="mt-2 space-y-1">
+                          {(calc.deductions?.health ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Salud:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.health ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.pension ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Pensión:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.pension ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.solidarity ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Solidaridad:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.solidarity ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.absence ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Ausencias:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.absence ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.planCorporativo ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Plan Corporativo:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.planCorporativo ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.recordar ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Recordar:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.recordar ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.inventariosCruces ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Inventarios y Cruces:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.inventariosCruces ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.multas ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Multas:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.multas ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.fondoEmpleados ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Fondo Empleados:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.fondoEmpleados ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.carteraEmpleados ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Cartera Empleados:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.carteraEmpleados ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
+                          
+                          {(calc.deductions?.advance ?? 0) > 0 && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs text-gray-600">• Anticipo Quincena:</span>
+                              <span className="text-xs text-red-600">-${(calc.deductions?.advance ?? 0).toLocaleString()}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       
