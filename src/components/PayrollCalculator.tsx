@@ -419,45 +419,28 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
   const exportToExcel = () => {
     const monthFormatted = formatMonthYear(selectedMonth);
     const { year, month } = parseMonthString(selectedMonth);
-    const daysInMonth = getDaysInMonth(year, month);
     
-    // Prepare data for Excel
+    // Prepare data for Excel - exactly like the table view
     const excelData = payrollCalculations.map((calc, index) => {
-      const employeeAdvances = advances.filter(a => a.employeeId === calc.employee.id && a.month === selectedMonth);
-      const totalAdvanceAmount = employeeAdvances.reduce((sum, adv) => sum + adv.amount, 0);
-      
       return {
-        'No.': index + 1,
-        'Empleado': calc.employee.name,
-        'Cédula': calc.employee.cedula,
-        'Contrato': calc.employee.contractType,
-        'Salario Base': calc.baseSalary ?? 0,
-        'Días Trabajados': `${calc.workedDays}/${calc.totalDaysInMonth}`,
-        'Días Descontados': calc.discountedDays,
-        'Salario Bruto': calc.grossSalary ?? 0,
-        'Aux. Transporte': calc.transportAllowance ?? 0,
-        'Compensatorios Fijos': calc.bonusCalculations?.fixedCompensation || 0,
-        'Bonif. en Venta': calc.bonusCalculations?.salesBonus || 0,
-        'Horas Extra Fijas': calc.bonusCalculations?.fixedOvertime || 0,
-        'Horas Extra NE': calc.bonusCalculations?.unexpectedOvertime || 0,
-        'Recargos Nocturnos': calc.bonusCalculations?.nightSurcharge || 0,
-        'Festivos': calc.bonusCalculations?.sundayWork || 0,
-        'Aux. Gasolina': calc.bonusCalculations?.gasAllowance || 0,
-        'Lic. Estudio': calc.bonusCalculations?.studyLicense || 0,
-        'Total Adiciones': calc.bonusCalculations?.total || 0,
-        'Total Devengado': calc.totalEarned ?? 0,
-        'Salud': calc.deductions?.health ?? 0,
-        'Pensión': calc.deductions?.pension ?? 0,
-        'Solidaridad': calc.deductions?.solidarity ?? 0,
-        'Ausencias': calc.deductions?.absence ?? 0,
-        'Plan Corporativo': calc.deductions?.planCorporativo ?? 0,
-        'Recordar': calc.deductions?.recordar ?? 0,
-        'Inventarios y Cruces': calc.deductions?.inventariosCruces ?? 0,
-        'Multas': calc.deductions?.multas ?? 0,
-        'Fondo Empleados': calc.deductions?.fondoEmpleados ?? 0,
-        'Cartera Empleados': calc.deductions?.carteraEmpleados ?? 0,
-        'Anticipo Quincena': calc.deductions?.advance ?? 0,
-        'Total Deducciones': calc.deductions?.total ?? 0,
+        'EMPLEADO': `${calc.employee.name} (${calc.employee.contractType})`,
+        'BASE SALARIAL': calc.baseSalary ?? 0,
+        'DÍAS TRABAJADOS': `${calc.workedDays}/${calc.totalDaysInMonth}`,
+        'SUELDO MES': calc.grossSalary ?? 0,
+        'AUX. TRANSPORTE': calc.transportAllowance ?? 0,
+        'ADICIONES': calc.bonusCalculations?.total || 0,
+        'TOTAL DEVENGADO': calc.totalEarned ?? 0,
+        'SALUD': calc.deductions?.health ?? 0,
+        'PENSIÓN': calc.deductions?.pension ?? 0,
+        'AUSENCIAS $': calc.deductions?.absence ?? 0,
+        'PLAN CORP.': calc.deductions?.planCorporativo ?? 0,
+        'RECORDAR': calc.deductions?.recordar ?? 0,
+        'INVENTARIOS': calc.deductions?.inventariosCruces ?? 0,
+        'MULTAS': calc.deductions?.multas ?? 0,
+        'APORTE FONDO EMP.': calc.deductions?.fondoEmpleados ?? 0,
+        'CARTERA EMP.': calc.deductions?.carteraEmpleados ?? 0,
+        'ANTICIPO QUINCENA': calc.deductions?.advance ?? 0,
+        'TOTAL DED.': calc.deductions?.total ?? 0,
         'SALARIO NETO': calc.netSalary ?? 0,
       };
     });
@@ -465,73 +448,63 @@ export const PayrollCalculator: React.FC<PayrollCalculatorProps> = ({
     // Create workbook
     const wb = XLSX.utils.book_new();
     
-    // Create main worksheet
+    // Create main worksheet with the table data
     const ws = XLSX.utils.json_to_sheet(excelData);
     
-    // Set column widths
+    // Set column widths to match the table view
     const colWidths = [
-      { wch: 5 },   // No.
-      { wch: 25 },  // Empleado
-      { wch: 15 },  // Cédula
-      { wch: 10 },  // Contrato
-      { wch: 15 },  // Salario Base
-      { wch: 15 },  // Días Trabajados
-      { wch: 12 },  // Días Descontados
-      { wch: 15 },  // Salario Bruto
-      { wch: 12 },  // Aux. Transporte
-      { wch: 15 },  // Compensatorios
-      { wch: 15 },  // Bonif. Venta
-      { wch: 15 },  // H. Extra Fijas
-      { wch: 15 },  // H. Extra NE
-      { wch: 15 },  // Recargos Noc.
-      { wch: 12 },  // Festivos
-      { wch: 12 },  // Aux. Gasolina
-      { wch: 12 },  // Lic. Estudio
-      { wch: 15 },  // Total Adiciones
-      { wch: 15 },  // Total Devengado
-      { wch: 12 },  // Salud
-      { wch: 12 },  // Pensión
-      { wch: 12 },  // Solidaridad
-      { wch: 12 },  // Ausencias
-      { wch: 15 },  // Plan Corp.
-      { wch: 12 },  // Recordar
-      { wch: 15 },  // Inventarios
-      { wch: 12 },  // Multas
-      { wch: 15 },  // Fondo Emp.
-      { wch: 15 },  // Cartera Emp.
-      { wch: 15 },  // Anticipo
-      { wch: 15 },  // Total Ded.
-      { wch: 15 },  // Salario Neto
+      { wch: 30 },  // EMPLEADO
+      { wch: 15 },  // BASE SALARIAL
+      { wch: 15 },  // DÍAS TRABAJADOS
+      { wch: 15 },  // SUELDO MES
+      { wch: 15 },  // AUX. TRANSPORTE
+      { wch: 15 },  // ADICIONES
+      { wch: 18 },  // TOTAL DEVENGADO
+      { wch: 12 },  // SALUD
+      { wch: 12 },  // PENSIÓN
+      { wch: 15 },  // AUSENCIAS $
+      { wch: 12 },  // PLAN CORP.
+      { wch: 12 },  // RECORDAR
+      { wch: 15 },  // INVENTARIOS
+      { wch: 12 },  // MULTAS
+      { wch: 18 },  // APORTE FONDO EMP.
+      { wch: 15 },  // CARTERA EMP.
+      { wch: 18 },  // ANTICIPO QUINCENA
+      { wch: 15 },  // TOTAL DED.
+      { wch: 18 },  // SALARIO NETO
     ];
     ws['!cols'] = colWidths;
     
-    // Add summary data
+    // Create a summary sheet with totals
     const summaryData = [
-      ['RESUMEN DE NÓMINA', ''],
-      [`Mes: ${monthFormatted}`, ''],
-      [`Fecha de procesamiento: ${new Date(selectedDate).toLocaleDateString()}`, ''],
-      [`Días del mes: ${daysInMonth}`, ''],
+      ['RESUMEN DE NÓMINA - ' + monthFormatted, ''],
       ['', ''],
-      ['CONFIGURACIÓN DE DEDUCCIONES', ''],
-      [`Salud: ${deductionRates.health}%`, ''],
-      [`Pensión: ${deductionRates.pension}%`, ''],
-      [`Solidaridad: ${deductionRates.solidarity}%`, ''],
-      [`Auxilio de Transporte: $${deductionRates.transportAllowance.toLocaleString()}`, ''],
-      ['', ''],
-      ['TOTALES', ''],
+      ['TOTALES GENERALES', ''],
       [`Total Empleados: ${payrollCalculations.length}`, ''],
+      [`Total Salarios Base: $${payrollCalculations.reduce((sum, calc) => sum + (calc.baseSalary ?? 0), 0).toLocaleString()}`, ''],
       [`Total Salarios Brutos: $${payrollCalculations.reduce((sum, calc) => sum + (calc.grossSalary ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Auxilio Transporte: $${payrollCalculations.reduce((sum, calc) => sum + (calc.transportAllowance ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Adiciones: $${payrollCalculations.reduce((sum, calc) => sum + (calc.bonusCalculations?.total || 0), 0).toLocaleString()}`, ''],
+      [`Total Devengado: $${payrollCalculations.reduce((sum, calc) => sum + (calc.totalEarned ?? 0), 0).toLocaleString()}`, ''],
+      ['', ''],
+      ['DEDUCCIONES TOTALES', ''],
+      [`Total Salud: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.health ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Pensión: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.pension ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Ausencias: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.absence ?? 0), 0).toLocaleString()}`, ''],
+      [`Total Anticipo Quincena: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.advance ?? 0), 0).toLocaleString()}`, ''],
       [`Total Deducciones: $${payrollCalculations.reduce((sum, calc) => sum + (calc.deductions?.total ?? 0), 0).toLocaleString()}`, ''],
-      [`Total Anticipo Quincena: $${totalAdvancesMonth.toLocaleString()}`, ''],
+      ['', ''],
       [`TOTAL NÓMINA NETA: $${totalPayroll.toLocaleString()}`, ''],
+      ['', ''],
+      [`Fecha de procesamiento: ${new Date(selectedDate).toLocaleDateString()}`, ''],
     ];
     
     const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
-    summaryWs['!cols'] = [{ wch: 40 }, { wch: 20 }];
+    summaryWs['!cols'] = [{ wch: 50 }, { wch: 20 }];
     
     // Add worksheets to workbook
     XLSX.utils.book_append_sheet(wb, summaryWs, 'Resumen');
-    XLSX.utils.book_append_sheet(wb, ws, 'Nómina Detallada');
+    XLSX.utils.book_append_sheet(wb, ws, 'Detalle de Nómina');
     
     // Save file
     XLSX.writeFile(wb, `nomina_${selectedMonth}.xlsx`);
